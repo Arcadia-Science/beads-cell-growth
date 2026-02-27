@@ -1,11 +1,20 @@
 [project]
-name = "TODO: Tool name"
+name = "2026-bead-growth"
 description = "TODO: Tool description"
-version = "0.0.0"
+version = "0.1"
 readme = "README.md"
 requires-python = ">=3.12"
 license = { file = "LICENSE" }
+dependencies = [
+    "arcadia-microscopy-tools[all]>=0.2.5",
+    "statsmodels>=0.14.6",
+]
 
+[dependency-groups]
+dev = [
+    "jupyter>=1.1.1",
+    "ruff>=0.15.4",
+]
 
 [tool.ruff]
 # The directories to consider when resolving first- vs. third-party imports
