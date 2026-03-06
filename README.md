@@ -2,7 +2,7 @@
 
 ## Purpose
 
-TODO: Briefly describe the core analyses performed in the repository and the motivation behind them.
+The following repository has both the raw microscopy data .nds files and the graphing .py files that allow us to take processed data (using arcadia-microscopy-tools) and graph it as shown in the publication. .xlsx files include both the raw data ABS data and converted OD averages.
 
 ## Installation and Setup
 
@@ -24,6 +24,8 @@ uv sync --all-extras
 
 ## Data
 
+Input data:
+
 TODO: Add details about the description of input / output data and links to Zenodo depositions, if applicable.
 
 ## Overview
@@ -32,18 +34,13 @@ TODO: Add details about the description of input / output data and links to Zeno
 
 ### Methods
 
-TODO: Include a brief, step-wise overview of analyses performed.
-
-> Example:
->
-> 1.  Download scripts using `download.ipynb`.
-> 2.  Preprocess using `./preprocessing.sh -a data/`
-> 3.  Run Snakemake pipeline `snakemake --snakefile Snakefile`
-> 4.  Generate figures using `pub/make_figures.ipynb`.
+1. Download data from ZENODO LINKS HERE.
+2. Process data using arcadia-microscopy-files.
+3. Generate figures using .py files listed here to map, statistically analyze, and plot processed data as shown in a given figure.
 
 ### Compute Specifications
 
-TODO: Describe what compute resources were used to run the analysis. For example, you could list the operating system, number of cores, RAM, and storage space.
+No compute resources were used to process this data.
 
 ## Contributing
 
