@@ -106,7 +106,7 @@ def violin_grouped_with_means(df: pd.DataFrame, y: str, title: str, outpath: Pat
                 _, p_adj, _, _ = multipletests(pvals_arr[mask], method="holm")
                 adj[mask] = p_adj
 
-            for (control_t, bead_t), p_raw, p_adj in zip(tests, pvals_arr, adj):
+            for (control_t, bead_t), _p_raw, p_adj in zip(tests, pvals_arr, adj, strict=False):
                 star = pval_to_stars(p_adj)
                 sig_map[(strain, bead_t)] = star
                 sig_map.setdefault((strain, control_t), None)
@@ -124,9 +124,6 @@ def violin_grouped_with_means(df: pd.DataFrame, y: str, title: str, outpath: Pat
     # extra_space is expressed in the same x-units as 'step'
     extra_space = step * 1.5
 
-    # color palette: seaborn default or None
-    palette = None
-
     for i_t, treatment in enumerate(TREATMENT_ORDER):
         bar_x = []
         bar_h = []
@@ -140,7 +137,8 @@ def violin_grouped_with_means(df: pd.DataFrame, y: str, title: str, outpath: Pat
                 mu = 0.0
                 sd = 0.0
             base = x_centers[strain]
-            # add extra spacing between volumes: treatments are ordered [vol1_no, vol1_bead, vol2_no, ...]
+            # add extra spacing between volumes: treatments are ordered:
+            # [vol1_no, vol1_bead, vol2_no, ...]
             vol_idx = i_t // 2
             offset = -total_width / 2 + (i_t + 0.5) * step
             extra_offset = vol_idx * extra_space
@@ -282,14 +280,14 @@ def violin_grouped_with_means(df: pd.DataFrame, y: str, title: str, outpath: Pat
     print(f"Saved: {outpath}")
 
 
-def parse_well_from_name(name: str) -> Tuple[Optional[str], Optional[int]]:
+def parse_well_from_name(name: str) -> tuple[str | None, int | None]:
     m = WELL_RE.match(name)
     if not m:
         return None, None
     return m.group(1), int(m.group(2))
 
 
-def map_strain_and_treatment(letter: str, num: int) -> Tuple[str, str]:
+def map_strain_and_treatment(letter: str, num: int) -> tuple[str, str]:
     """Map a well (row letter + column number) to (strain, treatment).
 
     New layout rules for 24-bead experiment:
@@ -325,8 +323,8 @@ def map_strain_and_treatment(letter: str, num: int) -> Tuple[str, str]:
     return strain, treatment
 
 
-def find_matching_csvs(processed_dir: Path) -> List[Path]:
-    files: List[Path] = []
+def find_matching_csvs(processed_dir: Path) -> list[Path]:
+    files: list[Path] = []
     for p in processed_dir.glob("*.csv"):
         if not p.name.startswith("Well"):
             continue
@@ -350,7 +348,8 @@ def read_one_csv(p: Path) -> pd.DataFrame:
     axis_col = next((c for c in axis_candidates if c in df.columns), None)
     if axis_col is None:
         raise KeyError(
-            f"{p.name} missing required column: axis_major_length (or variants). Columns: {', '.join(df.columns)}"
+            f"{p.name} missing required column: axis_major_length (or variants). Columns: "
+            f"{', '.join(df.columns)}"
         )
 
     out = pd.DataFrame(
@@ -376,7 +375,7 @@ def read_one_csv(p: Path) -> pd.DataFrame:
     return out
 
 
-def build_combined_dataframe(csv_paths: List[Path]) -> pd.DataFrame:
+def build_combined_dataframe(csv_paths: list[Path]) -> pd.DataFrame:
     parts = []
     for p in csv_paths:
         letter, num = parse_well_from_name(p.name)
@@ -455,19 +454,7 @@ def violin_faceted(df: pd.DataFrame, y: str, title: str, outpath: Path) -> None:
             )
         return 0.0, 0.0, 0
 
-    # Compute grouping letters using all-to-all pairwise tests (greedy grouping).
-    # This produces labels like 'a', 'b', 'c' for treatments that are significantly different.
-    try:
-        from _stats_helpers import grouping_letters
-
-        no_bead_treats = [t for t in TREATMENT_ORDER if "no bead" in t]
-        bead_treats = [t for t in TREATMENT_ORDER if "bead" in t]
-        sig_map_no = grouping_letters(dfp, no_bead_treats, y, alpha=0.05)
-        sig_map_yes = grouping_letters(dfp, bead_treats, y, alpha=0.05)
-        sig_map = {**sig_map_no, **sig_map_yes}
-    except Exception:
-        # fallback: empty map (no labels)
-        sig_map = {}
+    sig_map = {}
 
     for i_row, vol in enumerate(volumes):
         for j_col, strain in enumerate(strains):
@@ -492,7 +479,7 @@ def violin_faceted(df: pd.DataFrame, y: str, title: str, outpath: Path) -> None:
                 ax.set_ylim(bottom=0)
 
                 # mean inside bars
-                for xi, h in zip(x, heights):
+                for xi, h in zip(x, heights, strict=False):
                     y_text_inside = (h * 0.5) if h > 0 else (h + 0.05)
                     ax.text(
                         xi,
@@ -561,7 +548,7 @@ def violin_faceted(df: pd.DataFrame, y: str, title: str, outpath: Path) -> None:
     print(f"Saved: {outpath}")
 
 
-def main(argv: List[str] | None = None) -> int:
+def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description="DIC-only: violin plots faceted by strain and bead treatment"
     )
