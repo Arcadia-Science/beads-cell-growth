@@ -1,68 +1,38 @@
 from __future__ import annotations
-
 import argparse
 import re
 from pathlib import Path
-from typing import List, Optional, Tuple
 
-import pandas as pd
-import numpy as np
-from math import isnan
-try:
-    from scipy import stats
-    HAVE_SCIPY = True
-except Exception:
-    stats = None
-    HAVE_SCIPY = False
 import matplotlib.pyplot as plt
-# Importing the project-wide helpers can fail during iterative edits
-# (syntax errors). Provide a local robust `safe_ttest` fallback so the
-# script can run even if `_stats_helpers.py` is currently malformed.
-def safe_ttest(a, b) -> float:
-    try:
-        if HAVE_SCIPY and stats is not None:
-            _stat, p = stats.ttest_ind(a, b, equal_var=False, nan_policy="omit")
-            return float(p)
-    except Exception:
-        pass
-    return 1.0
-
-try:
-    import seaborn as sns
-    HAVE_SEABORN = True
-except Exception:
-    sns = None
-    HAVE_SEABORN = False
+import numpy as np
+import pandas as pd
+import seaborn as sns
+from scipy import stats
+from statsmodels.stats.multitest import multipletests
 
 WELL_RE = re.compile(r"^Well([A-Z])(\d{2})")
 
-# Strain order remains the two strains used in these experiments
+# New strain order and treatment mapping for the 24-bead layout
+# Rows A-C -> dea2^, Rows D-F -> SP286
 STRAIN_ORDER = ["dea2^", "SP286"]
 
-# Treatments for the supplements experiment are combinations of supplements
-# mapped by well column and row. We enumerate expected labels here so
-# plotting can treat them as ordered categoricals.
-TREATMENT_ORDER = [
-    "NONE",
-    "D",
-    "V",
-    "A",
-    "D+A",
-    "V+A",
-    "D+V",
-    "D+V+A",
-]
+# Treatments encode media volume (1-5 mL) and presence/absence of bead.
+# Columns 1-5: no bead (volumes 1..5 mL)
+# Columns 6-10: bead (volumes 1..5 mL repeated)
+# Order treatments by volume ascending, and show no-bead before bead for each volume.
+TREATMENT_ORDER = []
+for vol in (1, 2, 3, 4, 5):
+    TREATMENT_ORDER.append(f"{vol} mL no bead")
+    TREATMENT_ORDER.append(f"{vol} mL bead")
 
-def violin_grouped_with_means(df: pd.DataFrame, y: str, title: str, outpath: Path, clusters: int = 2) -> None:
+
+def violin_grouped_with_means(df: pd.DataFrame, y: str, title: str, outpath: Path) -> None:
     outpath.parent.mkdir(parents=True, exist_ok=True)
 
     dfp = df.dropna(subset=[y]).copy()
     if dfp.empty:
         print(f"No data to plot for {y}")
         return
-
-    if not HAVE_SEABORN:
-        raise RuntimeError("This plotting function requires seaborn. Install with: pip install seaborn")
 
     sns.set(style="whitegrid")
 
@@ -71,24 +41,13 @@ def violin_grouped_with_means(df: pd.DataFrame, y: str, title: str, outpath: Pat
     # Compute group statistics (mean, std) for each strain x treatment
     stats_df = (
         dfp.groupby(["strain", "treatment"], observed=True)[y]
-        .agg(["mean", "std", "count"]).reset_index()
+        .agg(["mean", "std", "count"])
+        .reset_index()
     )
 
-    # Replace the previous two-way/Tukey/CLD logic with per-strain one-way
-    # ANOVA and pairwise comparisons versus the 'NONE' (no supplement) control.
-    # For each strain:
-    #  - run one-way ANOVA across all present treatments (if at least two groups)
-    #  - compare each treatment vs 'NONE' using Welch's t-test
-    #  - adjust p-values across treatments for that strain using Holm
-    #    (via statsmodels.multipletests if available), fallback to Bonferroni
-    # Results are mapped to star labels and stored in `sig_map`.
+    # Per-strain pairwise comparisons of bead vs no-bead for each volume.
+    # Welch's t-test with Holm correction across volumes per strain.
     sig_map: dict[tuple[str, str], str] = {}
-    try:
-        from statsmodels.stats.multitest import multipletests
-        HAVE_MULTITEST = True
-    except Exception:
-        multipletests = None
-        HAVE_MULTITEST = False
 
     def pval_to_stars(p):
         if p is None or (isinstance(p, float) and (pd.isna(p) or np.isnan(p))):
@@ -98,93 +57,51 @@ def violin_grouped_with_means(df: pd.DataFrame, y: str, title: str, outpath: Pat
         except Exception:
             return None
         if p < 0.001:
-            return '***'
+            return "***"
         if p < 0.01:
-            return '**'
+            return "**"
         if p < 0.05:
-            return '*'
-        return 'ns'
+            return "*"
+        return "ns"
 
-    # collect per-strain results for optional CSV export
-    pval_rows: list[dict] = []
-
-    for strain in dfp["strain"].cat.categories:
-        df_strain = dfp[dfp["strain"] == strain]
-        if df_strain.empty:
+    vols = sorted(dfp["volume_ml"].dropna().unique())
+    for strain in STRAIN_ORDER:
+        sdf = dfp[dfp["strain"] == strain]
+        if sdf.empty:
             continue
 
-        # groups present for ANOVA
-        groups_present = [t for t in TREATMENT_ORDER if not df_strain[df_strain['treatment'] == t].empty]
-
-        # overall one-way ANOVA across present groups (if >=2)
-        anova_p = None
-        try:
-            arrays = [df_strain.loc[df_strain['treatment'] == t, y].dropna().values for t in groups_present if len(df_strain.loc[df_strain['treatment'] == t, y].dropna()) > 0]
-            if len(arrays) >= 2:
-                anova_res = stats.f_oneway(*arrays)
-                anova_p = float(anova_res.pvalue) if hasattr(anova_res, 'pvalue') else float(anova_res[1])
-        except Exception:
-            anova_p = None
-
-        # pairwise comparisons vs NONE control
-        control_vals = df_strain.loc[df_strain['treatment'] == 'NONE', y].dropna().values
         pvals = []
-        treatments_tested = []
-        for t in groups_present:
-            if t == 'NONE':
-                sig_map[(strain, t)] = None
-                continue
-            vals = df_strain.loc[df_strain['treatment'] == t, y].dropna().values
-            if len(vals) < 2 or len(control_vals) < 2:
+        tests = []
+        for vol in vols:
+            control_t = f"{int(vol)} mL no bead"
+            bead_t = f"{int(vol)} mL bead"
+            control_vals = sdf.loc[sdf["treatment"] == control_t, y].dropna().values
+            bead_vals = sdf.loc[sdf["treatment"] == bead_t, y].dropna().values
+            if len(control_vals) < 2 or len(bead_vals) < 2:
                 p = np.nan
             else:
                 try:
-                    stat, p = stats.ttest_ind(vals, control_vals, equal_var=False, nan_policy='omit')
+                    stat, p = stats.ttest_ind(
+                        bead_vals, control_vals, equal_var=False, nan_policy="omit"
+                    )
                 except Exception:
                     p = np.nan
             pvals.append(p)
-            treatments_tested.append(t)
-            pval_rows.append({
-                'strain': strain,
-                'treatment': t,
-                'anova_p': anova_p,
-                'p_raw': p,
-                'p_adj': None,
-            })
+            tests.append((control_t, bead_t))
 
-        # multiple testing correction across treatments for this strain
+        # correct p-values across volumes for this strain
         if pvals:
             pvals_arr = np.array([np.nan if p is None else p for p in pvals], dtype=float)
             mask = ~np.isnan(pvals_arr)
             adj = np.full_like(pvals_arr, np.nan)
             if mask.any():
-                if HAVE_MULTITEST:
-                    try:
-                        _, p_adj, _, _ = multipletests(pvals_arr[mask], method='holm')
-                        adj[mask] = p_adj
-                    except Exception:
-                        adj[mask] = np.minimum(pvals_arr[mask] * mask.sum(), 1.0)
-                else:
-                    adj[mask] = np.minimum(pvals_arr[mask] * mask.sum(), 1.0)
+                _, p_adj, _, _ = multipletests(pvals_arr[mask], method="holm")
+                adj[mask] = p_adj
 
-            for t, p_raw, p_adj in zip(treatments_tested, pvals_arr, adj):
+            for (control_t, bead_t), p_raw, p_adj in zip(tests, pvals_arr, adj):
                 star = pval_to_stars(p_adj)
-                sig_map[(strain, t)] = star
-                # update pval_rows with adjusted p
-                for r in pval_rows:
-                    if r['strain'] == strain and r['treatment'] == t:
-                        r['p_adj'] = float(p_adj) if not np.isnan(p_adj) else None
-                        break
-
-    # write p-values CSV next to the output if we have any results
-    try:
-        if pval_rows:
-            pvals_df = pd.DataFrame(pval_rows)
-            csv_out = outpath.parent / f"one_way_{y}_pvalues.csv"
-            pvals_df.to_csv(csv_out, index=False)
-            print(f"Wrote p-values summary: {csv_out}")
-    except Exception:
-        pass
+                sig_map[(strain, bead_t)] = star
+                sig_map.setdefault((strain, control_t), None)
 
     # Plot grouped bar chart: for each strain, draw a set of dodged bars for treatments
     x_centers = {strain: i for i, strain in enumerate(STRAIN_ORDER)}
@@ -221,7 +138,7 @@ def violin_grouped_with_means(df: pd.DataFrame, y: str, title: str, outpath: Pat
     ax.set_xlabel("Strain")
     ax.set_xticks(list(x_centers.values()))
     # Replace caret '^' with Greek delta 'Δ' for display only
-    display_names = [s.replace('^', 'Δ') for s in list(x_centers.keys())]
+    display_names = [s.replace("^", "Δ") for s in list(x_centers.keys())]
     ax.set_xticklabels(display_names)
 
     # Use user-friendly axis labels with units when possible
@@ -235,11 +152,7 @@ def violin_grouped_with_means(df: pd.DataFrame, y: str, title: str, outpath: Pat
     ax.set_ylabel(ylabel)
 
     # ---- Mean annotations ----
-    means = (
-        dfp.groupby(["strain", "treatment"], observed=True)[y]
-        .mean()
-        .reset_index()
-    )
+    means = dfp.groupby(["strain", "treatment"], observed=True)[y].mean().reset_index()
 
     # track maximum y used for significance labels so we can expand the
     # axis top limit to make space for stars / letters
@@ -257,8 +170,68 @@ def violin_grouped_with_means(df: pd.DataFrame, y: str, title: str, outpath: Pat
     y_span = (y_max - y_min) if (y_max is not None and y_min is not None) else 0.0
     ann_offset = y_span * 0.03 if y_span else 0.1
 
-    # Note: we purposely do not compute ANOVA or pairwise-star annotations
-    # here because we already produced grouping letters for each strain.
+    # Replace with per-strain, per-volume one-way ANOVA comparing bead vs no-bead.
+    # For each strain we test each volume (1..5 mL) with SciPy's f_oneway
+    # (equivalent to a two-group ANOVA). Adjust p-values across volumes
+    # per-strain using Holm correction when available.
+    sig_map: dict[tuple[str, str], str] = {}
+
+    def pval_to_stars(p):
+        if p is None or (isinstance(p, float) and (pd.isna(p) or np.isnan(p))):
+            return None
+        try:
+            p = float(p)
+        except Exception:
+            return None
+        if p < 0.001:
+            return "***"
+        if p < 0.01:
+            return "**"
+        if p < 0.05:
+            return "*"
+        return "ns"
+
+    vols = sorted(dfp["volume_ml"].dropna().unique())
+    for strain in dfp["strain"].cat.categories:
+        sdf = dfp[dfp["strain"] == strain]
+        if sdf.empty:
+            continue
+
+        pvals = []
+        tests = []
+        for vol in vols:
+            control_t = f"{int(vol)} mL no bead"
+            bead_t = f"{int(vol)} mL bead"
+            control_vals = sdf.loc[sdf["treatment"] == control_t, y].dropna().values
+            bead_vals = sdf.loc[sdf["treatment"] == bead_t, y].dropna().values
+            if len(control_vals) < 2 or len(bead_vals) < 2:
+                p = np.nan
+            else:
+                try:
+                    anova_res = stats.f_oneway(control_vals, bead_vals)
+                    p = (
+                        float(anova_res.pvalue)
+                        if hasattr(anova_res, "pvalue")
+                        else float(anova_res[1])
+                    )
+                except Exception:
+                    p = np.nan
+            pvals.append(p)
+            tests.append((control_t, bead_t))
+
+        # Multiple-testing correction across volumes for this strain
+        if pvals:
+            pvals_arr = np.array([np.nan if p is None else p for p in pvals], dtype=float)
+            mask = ~np.isnan(pvals_arr)
+            adj = np.full_like(pvals_arr, np.nan)
+            if mask.any():
+                _, p_adj, _, _ = multipletests(pvals_arr[mask], method="holm")
+                adj[mask] = p_adj
+
+            for (control_t, bead_t), p_raw, p_adj in zip(tests, pvals_arr, adj):
+                star = pval_to_stars(p_adj)
+                sig_map[(strain, bead_t)] = star
+                sig_map.setdefault((strain, control_t), None)
 
     for _, row in means.iterrows():
         strain = row["strain"]
@@ -280,7 +253,9 @@ def violin_grouped_with_means(df: pd.DataFrame, y: str, title: str, outpath: Pat
         sd_val = 0.0
         if not row_stat.empty:
             try:
-                sd_val = float(row_stat["std"].iloc[0]) if not isnan(row_stat["std"].iloc[0]) else 0.0
+                sd_val = (
+                    float(row_stat["std"].iloc[0]) if not isnan(row_stat["std"].iloc[0]) else 0.0
+                )
             except Exception:
                 sd_val = 0.0
 
@@ -291,25 +266,33 @@ def violin_grouped_with_means(df: pd.DataFrame, y: str, title: str, outpath: Pat
             y_text_inside = mu + ann_offset
 
         ax.text(
-            x, y_text_inside,
+            x,
+            y_text_inside,
             f"{mu:.2f}",
-            ha="center", va="center",
+            ha="center",
+            va="center",
             fontsize=8,
-            color='white',
-            fontweight='bold',
+            color="white",
+            fontweight="bold",
         )
 
         # significance label (placed above the error bar / bar top)
         sig_label = sig_map.get((str(strain), str(treatment)), None)
-        sig_y = mu + (sd_val if sd_val > 0 else 0.0) + max(ann_offset * 0.6, (sd_val if sd_val > 0 else mu * 0.03))
+        sig_y = (
+            mu
+            + (sd_val if sd_val > 0 else 0.0)
+            + max(ann_offset * 0.6, (sd_val if sd_val > 0 else mu * 0.03))
+        )
         # Skip showing 'ns' on the NO bead (control) bars to reduce clutter
-        if sig_label and not (str(treatment) == "NO bead" and sig_label == 'ns'):
+        if sig_label and not (str(treatment) == "NO bead" and sig_label == "ns"):
             ax.text(
-                x, sig_y,
+                x,
+                sig_y,
                 sig_label,
-                ha="center", va="bottom",
+                ha="center",
+                va="bottom",
                 fontsize=8,
-                fontweight='bold',
+                fontweight="bold",
             )
             if sig_y and (not pd.isna(sig_y)):
                 try:
@@ -336,7 +319,6 @@ def violin_grouped_with_means(df: pd.DataFrame, y: str, title: str, outpath: Pat
     print(f"Saved: {outpath}")
 
 
-
 def parse_well_from_name(name: str) -> Tuple[Optional[str], Optional[int]]:
     m = WELL_RE.match(name)
     if not m:
@@ -347,51 +329,35 @@ def parse_well_from_name(name: str) -> Tuple[Optional[str], Optional[int]]:
 def map_strain_and_treatment(letter: str, num: int) -> Tuple[str, str]:
     """Map a well (row letter + column number) to (strain, treatment).
 
-    Mapping rules for the supplements experiment (user-specified):
-    - Strain is determined by the column block: columns 1-6 -> dea2^, columns 7-12 -> SP286
-    - Within each 6-column block the treatment is determined by the row letter
-      and the column sub-block (1-3 vs 4-6):
-        columns 1-3 (or 7-9):
-          A -> "NONE", B -> "D", C -> "V", D -> "A"
-        columns 4-6 (or 10-12):
-          A -> "D+A", B -> "V+A", C -> "D+V", D -> "D+V+A"
-    The returned `treatment` is a short label like "D+V".
+    New layout rules for 24-bead experiment:
+    - Rows A-C -> dea2^
+    - Rows D-F -> SP286
+    - Columns 1..5: no bead; columns 6..10: bead
+    - Volume (1-5 mL) is determined by the column within its group:
+      columns 1 & 6 -> 1 mL, 2 & 7 -> 2 mL, ..., 5 & 10 -> 5 mL
+    The returned `treatment` is a human-readable label: e.g. "1 mL no bead" or "3 mL bead".
     """
     letter = letter.upper().strip()
-
-    # validate column range for this plate (expect 1..12)
-    if not (1 <= num <= 12):
+    # strain by row letter
+    if letter in {"A", "B", "C"}:
+        strain = "dea2^"
+    elif letter in {"D", "E", "F"}:
+        strain = "SP286"
+    else:
         return "unknown", "unknown"
 
-    # strain by column block: 1-6 => dea2^, 7-12 => SP286
-    if 1 <= num <= 6:
-        strain = "dea2^"
-    else:
-        strain = "SP286"
+    # columns 1..10 only
+    if not (1 <= num <= 10):
+        return "unknown", "unknown"
 
-    # position within the 6-column block (1..6)
-    pos = ((num - 1) % 6) + 1
+    # determine volume (1..5 mL) by column within its 5-column block
+    vol_index = ((num - 1) % 5) + 1  # maps 1->1,2->2,...,6->1,7->2,...
+    volume_label = f"{vol_index} mL"
 
-    # mapping for columns 1-3 (pos 1..3)
-    map_1_3 = {
-        "A": "NONE",
-        "B": "D",
-        "C": "V",
-        "D": "A",
-    }
+    # bead presence: columns 1-5 = no bead, 6-10 = bead
+    bead_presence = "bead" if num >= 6 else "no bead"
 
-    # mapping for columns 4-6 (pos 4..6)
-    map_4_6 = {
-        "A": "D+A",
-        "B": "V+A",
-        "C": "D+V",
-        "D": "D+V+A",
-    }
-
-    if pos <= 3:
-        treatment = map_1_3.get(letter, "unknown")
-    else:
-        treatment = map_4_6.get(letter, "unknown")
+    treatment = f"{volume_label} {bead_presence}"
 
     return strain, treatment
 
@@ -420,11 +386,15 @@ def read_one_csv(p: Path) -> pd.DataFrame:
 
     axis_col = next((c for c in axis_candidates if c in df.columns), None)
     if axis_col is None:
-        raise KeyError(f"{p.name} missing required column: axis_major_length (or variants). Columns: {', '.join(df.columns)}")
+        raise KeyError(
+            f"{p.name} missing required column: axis_major_length (or variants). Columns: {', '.join(df.columns)}"
+        )
 
-    out = pd.DataFrame({
-        "axis_major_length": pd.to_numeric(df[axis_col], errors="coerce"),
-    })
+    out = pd.DataFrame(
+        {
+            "axis_major_length": pd.to_numeric(df[axis_col], errors="coerce"),
+        }
+    )
 
     # area is optional but desired; accept variants
     area_col = next((c for c in area_candidates if c in df.columns), None)
@@ -474,8 +444,14 @@ def build_combined_dataframe(csv_paths: List[Path]) -> pd.DataFrame:
     vol_match = out["treatment"].str.extract(r"^(\d+)")
     out["volume_ml"] = pd.to_numeric(vol_match[0], errors="coerce")
     # map volumes 1..5 to group letters a..e
-    out["volume_group"] = out["volume_ml"].apply(lambda v: (chr(96 + int(v)) if not pd.isna(v) and 1 <= int(v) <= 26 else pd.NA))
-    out["bead_present"] = out["treatment"].str.contains(r"\\bbead\\b")
+    out["volume_group"] = out["volume_ml"].apply(
+        lambda v: chr(96 + int(v)) if not pd.isna(v) and 1 <= int(v) <= 26 else pd.NA
+    )
+    # accurately detect explicit 'no bead' so strings like '1 mL no bead'
+    # aren't misclassified as bead-present due to the substring 'bead'.
+    no_bead_mask = out["treatment"].str.contains(r"\bno\s*bead\b", case=False, regex=True)
+    has_bead_mask = out["treatment"].str.contains(r"\bbead\b", case=False, regex=True)
+    out["bead_present"] = has_bead_mask & ~no_bead_mask
 
     out["strain"] = pd.Categorical(out["strain"], categories=STRAIN_ORDER, ordered=True)
     out["treatment"] = pd.Categorical(out["treatment"], categories=TREATMENT_ORDER, ordered=True)
@@ -490,9 +466,6 @@ def violin_faceted(df: pd.DataFrame, y: str, title: str, outpath: Path) -> None:
         print(f"No data to plot for {y}")
         return
 
-    if not HAVE_SEABORN:
-        raise RuntimeError("This plotting function requires seaborn. Install with: pip install seaborn")
-
     sns.set(style="whitegrid")
 
     # Facet rows = volume (1-5 mL), cols = strain
@@ -505,44 +478,47 @@ def violin_faceted(df: pd.DataFrame, y: str, title: str, outpath: Path) -> None:
     # Precompute stats
     stats_df = (
         dfp.groupby(["strain", "treatment"], observed=True)[y]
-        .agg(["mean", "std", "count"]).reset_index()
+        .agg(["mean", "std", "count"])
+        .reset_index()
     )
 
     def get_stats(strain: str, treatment: str) -> tuple[float, float, int]:
         row = stats_df[(stats_df["strain"] == strain) & (stats_df["treatment"] == treatment)]
         if not row.empty and row["count"].iloc[0] > 0:
-            return float(row["mean"].iloc[0]), float(row["std"].iloc[0]) if not isnan(row["std"].iloc[0]) else 0.0, int(row["count"].iloc[0])
+            return (
+                float(row["mean"].iloc[0]),
+                float(row["std"].iloc[0]) if not isnan(row["std"].iloc[0]) else 0.0,
+                int(row["count"].iloc[0]),
+            )
         return 0.0, 0.0, 0
 
-    # Compute pairwise bead vs no-bead p-values per strain-volume (if SciPy available)
+    # Compute pairwise bead vs no-bead p-values per strain-volume
     sig_map: dict[tuple[str, str], str] = {}
-    if HAVE_SCIPY:
-        for strain in dfp["strain"].cat.categories:
-            df_strain = dfp[dfp["strain"] == strain]
-            for vol in volumes:
-                t_no = f"{vol} no bead"
-                t_yes = f"{vol} bead"
-                g_no = df_strain[df_strain["treatment"] == t_no][y].dropna().values
-                g_yes = df_strain[df_strain["treatment"] == t_yes][y].dropna().values
-                label_no = 'ns'
-                label_yes = 'ns'
-                if len(g_no) > 0 and len(g_yes) > 0:
-                    try:
-                        pval = safe_ttest(g_no, g_yes)
-                        if pval <= 0.001:
-                            label_yes = '***'
-                        elif pval <= 0.01:
-                            label_yes = '**'
-                        elif pval <= 0.05:
-                            label_yes = '*'
-                        else:
-                            label_yes = 'ns'
-                    except Exception:
-                        label_yes = 'ns'
-                sig_map[(str(strain), t_no)] = label_no
-                sig_map[(str(strain), t_yes)] = label_yes
-    else:
-        print("SciPy not available — skipping pairwise significance annotations.")
+    for strain in dfp["strain"].cat.categories:
+        df_strain = dfp[dfp["strain"] == strain]
+        for vol in volumes:
+            t_no = f"{vol} no bead"
+            t_yes = f"{vol} bead"
+            g_no = df_strain[df_strain["treatment"] == t_no][y].dropna().values
+            g_yes = df_strain[df_strain["treatment"] == t_yes][y].dropna().values
+            label_no = "ns"
+            label_yes = "ns"
+            if len(g_no) > 0 and len(g_yes) > 0:
+                try:
+                    _, pval = stats.ttest_ind(g_no, g_yes, equal_var=False, nan_policy="omit")
+                    pval = float(pval)
+                    if pval <= 0.001:
+                        label_yes = "***"
+                    elif pval <= 0.01:
+                        label_yes = "**"
+                    elif pval <= 0.05:
+                        label_yes = "*"
+                    else:
+                        label_yes = "ns"
+                except Exception:
+                    label_yes = "ns"
+            sig_map[(str(strain), t_no)] = label_no
+            sig_map[(str(strain), t_yes)] = label_yes
 
     for i_row, vol in enumerate(volumes):
         for j_col, strain in enumerate(strains):
@@ -569,25 +545,46 @@ def violin_faceted(df: pd.DataFrame, y: str, title: str, outpath: Path) -> None:
                 # mean inside bars
                 for xi, h in zip(x, heights):
                     y_text_inside = (h * 0.5) if h > 0 else (h + 0.05)
-                    ax.text(xi, y_text_inside, f"{h:.2f}", ha="center", va="center", fontsize=7, color='white', fontweight='bold')
+                    ax.text(
+                        xi,
+                        y_text_inside,
+                        f"{h:.2f}",
+                        ha="center",
+                        va="center",
+                        fontsize=7,
+                        color="white",
+                        fontweight="bold",
+                    )
 
                 # significance: show above the bead bar if present
                 sig_yes = sig_map.get((str(strain), t_yes), None)
                 sig_no = sig_map.get((str(strain), t_no), None)
-                if sig_yes and sig_yes != 'ns':
-                    sig_y = mu_yes + (sd_yes if sd_yes > 0 else 0.0) + max(mu_yes * 0.03, (sd_yes if sd_yes > 0 else 0.1))
-                    ax.text(1, sig_y, sig_yes, ha='center', va='bottom', fontsize=8, fontweight='bold')
-                if sig_no and sig_no != 'ns' and not t_no.endswith('no bead'):
-                    sig_y = mu_no + (sd_no if sd_no > 0 else 0.0) + max(mu_no * 0.03, (sd_no if sd_no > 0 else 0.1))
-                    ax.text(0, sig_y, sig_no, ha='center', va='bottom', fontsize=8, fontweight='bold')
+                if sig_yes and sig_yes != "ns":
+                    sig_y = (
+                        mu_yes
+                        + (sd_yes if sd_yes > 0 else 0.0)
+                        + max(mu_yes * 0.03, (sd_yes if sd_yes > 0 else 0.1))
+                    )
+                    ax.text(
+                        1, sig_y, sig_yes, ha="center", va="bottom", fontsize=8, fontweight="bold"
+                    )
+                if sig_no and sig_no != "ns" and not t_no.endswith("no bead"):
+                    sig_y = (
+                        mu_no
+                        + (sd_no if sd_no > 0 else 0.0)
+                        + max(mu_no * 0.03, (sd_no if sd_no > 0 else 0.1))
+                    )
+                    ax.text(
+                        0, sig_y, sig_no, ha="center", va="bottom", fontsize=8, fontweight="bold"
+                    )
 
             # Titles and labels
             if i_row == 0:
-                ax.set_title(strain.replace('^', 'Δ'), fontsize=9)
+                ax.set_title(strain.replace("^", "Δ"), fontsize=9)
             if j_col == 0:
-                if y == 'length':
+                if y == "length":
                     ax.set_ylabel(f"{vol}\nlength (µm)")
-                elif y == 'area':
+                elif y == "area":
                     ax.set_ylabel(f"{vol}\narea (µm²)")
                 else:
                     ax.set_ylabel(vol)
@@ -602,24 +599,22 @@ def violin_faceted(df: pd.DataFrame, y: str, title: str, outpath: Path) -> None:
 
 
 def main(argv: List[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="DIC-only: violin plots faceted by strain and bead treatment")
+    parser = argparse.ArgumentParser(
+        description="DIC-only: violin plots faceted by strain and bead treatment"
+    )
     parser.add_argument(
-        "--processed-dir", "-d",
+        "--processed-dir",
+        "-d",
         type=Path,
         default=Path.cwd() / "processed",
         help="Path to directory containing processed CSV files",
     )
     parser.add_argument(
-        "--out-dir", "-o",
+        "--out-dir",
+        "-o",
         type=Path,
         default=None,
         help="Output directory (default: processed-dir)",
-    )
-    parser.add_argument(
-        "--clusters", "-k",
-        type=int,
-        default=2,
-        help="Number of clusters to form per-strain for grouping letters (default: 2)",
     )
     args = parser.parse_args(argv)
 
@@ -650,16 +645,14 @@ def main(argv: List[str] | None = None) -> int:
         y="length",
         title="DIC length (µm) by strain and bead treatment (means labeled)",
         outpath=out_dir / "bar_length_grouped.svg",
-        clusters=args.clusters,
-)
+    )
 
     violin_grouped_with_means(
         df,
         y="area",
         title="DIC area (µm²) by strain and bead treatment (means labeled)",
         outpath=out_dir / "bar_area_grouped.svg",
-        clusters=args.clusters,
-)
+    )
 
     print("Done.")
     return 0

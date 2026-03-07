@@ -12,48 +12,28 @@ Color map: 'magma' (matplotlib). Outputs saved to Data_analysis/heatmaps.
 Usage: python make_od_heatmaps.py
 
 """
+
 from pathlib import Path
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
+
+import arcadia_pycolor as ap
 import matplotlib as mpl
-import math
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
-# Apply Arcadia style defaults when available
-try:
-    import arcadia_pycolor as ap
-    try:
-        rc = getattr(ap.style_defaults, 'ARCADIA_MATPLOTLIB_RC_PARAMS', None)
-        if rc:
-            plt.rcParams.update(rc)
-        # ensure saved figures are not transparent by default
-        try:
-            plt.rcParams['savefig.transparent'] = False
-        except Exception:
-            pass
-        # Ensure the image colormap is a standard matplotlib name to avoid
-        # style-provided aliases like 'apc:magma' that matplotlib may not
-        # recognize in all internal code paths.
-        try:
-            plt.rcParams['image.cmap'] = 'magma'
-        except Exception:
-            pass
-        # ensure base font size
-        try:
-            plt.rcParams['font.size'] = ap.style_defaults.BASE_FONT_SIZE
-        except Exception:
-            pass
-    except Exception:
-        pass
-except Exception:
-    ap = None
+rc = getattr(ap.style_defaults, "ARCADIA_MATPLOTLIB_RC_PARAMS", None)
+if rc:
+    plt.rcParams.update(rc)
+plt.rcParams["savefig.transparent"] = False
+plt.rcParams["image.cmap"] = "magma"
+plt.rcParams["font.size"] = ap.style_defaults.BASE_FONT_SIZE
 
-DATA_DIR = Path('Data')
-OUT_DIR = Path('Data_analysis') / 'heatmaps'
+DATA_DIR = Path("Data")
+OUT_DIR = Path("Data_analysis") / "heatmaps"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
-FILES = ['Supplement ODs.xlsx', 'All ODs.xlsx']
+FILES = ["Supplement ODs.xlsx", "All ODs.xlsx"]
 
 
 def _read_first_sheet(path: Path) -> pd.DataFrame:
@@ -76,44 +56,44 @@ def build_matrices(df: pd.DataFrame):
     df = df.rename(columns=colmap)
     # required columns: Experiment, genotype, time, OD
     cols = [c for c in df.columns]
-    key_cols = [c for c in cols if c.lower() not in ('experiment', 'genotype', 'time', 'od')]
+    key_cols = [c for c in cols if c.lower() not in ("experiment", "genotype", "time", "od")]
 
-    experiments = _ordered_unique(df['Experiment'].astype(str).tolist())
-    genotypes = _ordered_unique(df['genotype'].astype(str).tolist())
+    experiments = _ordered_unique(df["Experiment"].astype(str).tolist())
+    genotypes = _ordered_unique(df["genotype"].astype(str).tolist())
 
     matrices = {}  # (exp,geno) -> (2 x n_samples array, col_labels)
     all_vals = []
     for exp in experiments:
         for geno in genotypes:
-            sub = df[(df['Experiment'].astype(str) == exp) & (df['genotype'].astype(str) == geno)]
+            sub = df[(df["Experiment"].astype(str) == exp) & (df["genotype"].astype(str) == geno)]
             if sub.empty:
                 continue
             # build sample keys preserving order of appearance
             sample_keys = []
             rows = []
             for _, row in sub.iterrows():
-                key = ' | '.join(str(row[c]) for c in key_cols)
+                key = " | ".join(str(row[c]) for c in key_cols)
                 if key not in sample_keys:
                     sample_keys.append(key)
                 rows.append((key, row))
             n = len(sample_keys)
             mat = np.full((2, n), np.nan)
             for _, row in sub.iterrows():
-                key = ' | '.join(str(row[c]) for c in key_cols)
+                key = " | ".join(str(row[c]) for c in key_cols)
                 try:
                     col = sample_keys.index(key)
                 except ValueError:
                     continue
-                t = str(row['time']).lower() if not pd.isna(row['time']) else ''
-                if 'morning' in t:
+                t = str(row["time"]).lower() if not pd.isna(row["time"]) else ""
+                if "morning" in t:
                     r = 0
-                elif 'afternoon' in t:
+                elif "afternoon" in t:
                     r = 1
                 else:
                     # unknown time; skip
                     continue
                 try:
-                    val = float(row['OD'])
+                    val = float(row["OD"])
                 except Exception:
                     val = np.nan
                 mat[r, col] = val
@@ -127,7 +107,7 @@ def plot_file(path: Path):
     df = _read_first_sheet(path)
     experiments, genotypes, matrices, all_vals = build_matrices(df)
     if len(experiments) == 0 or len(genotypes) == 0:
-        print('No experiments/genotypes found in', path)
+        print("No experiments/genotypes found in", path)
         return
 
     nrow = len(experiments)
@@ -168,16 +148,10 @@ def plot_file(path: Path):
     # re-enable that behavior.)
 
     # prefer the Arcadia 'magma' gradient converted to a Matplotlib Colormap
-    cmap_obj = None
     try:
-        import arcadia_pycolor as ap
-        # ap.gradients.magma is a Gradient object with a helper to_mpl_cmap()
-        try:
-            cmap_obj = ap.gradients.magma.to_mpl_cmap()
-        except Exception:
-            cmap_obj = plt.get_cmap('magma')
+        cmap_obj = ap.gradients.magma.to_mpl_cmap()
     except Exception:
-        cmap_obj = plt.get_cmap('magma')
+        cmap_obj = plt.get_cmap("magma")
 
     # reverse the colormap so the gradient is flipped (user request)
     try:
@@ -205,25 +179,20 @@ def plot_file(path: Path):
     except Exception:
         # fallback: if the colormap has a name, attempt to get the '_r' variant
         try:
-            name = getattr(cmap_obj, 'name', None)
+            name = getattr(cmap_obj, "name", None)
             if name:
-                cmap_obj = mpl.colormaps.get(name + '_r')
+                cmap_obj = mpl.colormaps.get(name + "_r")
             else:
-                cmap_obj = mpl.colormaps.get('magma_r')
+                cmap_obj = mpl.colormaps.get("magma_r")
         except Exception:
-            cmap_obj = mpl.colormaps.get('magma_r')
+            cmap_obj = mpl.colormaps.get("magma_r")
 
-    # parchment background
-    try:
-        import arcadia_pycolor as ap
-        parchment = str(getattr(ap, 'parchment'))
-    except Exception:
-        parchment = '#F7F3EA'
+    parchment = str(getattr(ap, "parchment", "#F7F3EA"))
     fig.patch.set_facecolor(parchment)
     # ensure legend font matches axes
     try:
-        base_fs = plt.rcParams.get('font.size', 10)
-        plt.rcParams['legend.fontsize'] = base_fs
+        base_fs = plt.rcParams.get("font.size", 10)
+        plt.rcParams["legend.fontsize"] = base_fs
     except Exception:
         pass
     # adjust subplot spacing to avoid title/label overlap; give more room on
@@ -248,18 +217,20 @@ def plot_file(path: Path):
             except Exception:
                 pass
             # use the same global vmin/vmax across all facets so strains are comparable
-            im = ax.imshow(mat, aspect='equal', cmap=cmap_obj, vmin=vmin, vmax=vmax, interpolation='nearest')
+            im = ax.imshow(
+                mat, aspect="equal", cmap=cmap_obj, vmin=vmin, vmax=vmax, interpolation="nearest"
+            )
             # y ticks
             ax.set_yticks([0, 1])
-            ax.set_yticklabels(['morning', 'afternoon'])
+            ax.set_yticklabels(["morning", "afternoon"])
             # set axis tick label sizes to base font so they match legends
-            base_fs = plt.rcParams.get('font.size', 10)
-            ax.tick_params(axis='both', labelsize=base_fs)
+            base_fs = plt.rcParams.get("font.size", 10)
+            ax.tick_params(axis="both", labelsize=base_fs)
             # x ticks = each sample
             ncols = mat.shape[1]
             ax.set_xticks(np.arange(ncols))
             # set xtick labels as short versions of col_labels to avoid crowding
-            short_labels = [l if len(l) <= 12 else (l[:9] + '...') for l in col_labels]
+            short_labels = [l if len(l) <= 12 else (l[:9] + "...") for l in col_labels]
             ax.set_xticklabels(short_labels, rotation=90, fontsize=8)
             # label row/column facets
             if j == 0:
@@ -269,34 +240,35 @@ def plot_file(path: Path):
                 # top row: put genotype as title
                 ax.set_title(geno, fontsize=base_fs)
             # spine styling: only left/bottom visible
-            for spine in ('top', 'right'):
+            for spine in ("top", "right"):
                 ax.spines[spine].set_visible(False)
-            for spine in ('left', 'bottom'):
+            for spine in ("left", "bottom"):
                 ax.spines[spine].set_visible(True)
-                ax.spines[spine].set_color('black')
+                ax.spines[spine].set_color("black")
                 ax.spines[spine].set_linewidth(1.0)
             # no per-facet colorbar; we'll draw a single global colorbar below
             pass
     # draw one colorbar per group: 'ttubes', '96', '24'
-    groups = ['ttubes', '96', '24']
+    groups = ["ttubes", "96", "24"]
+
     # helper to detect group membership from strings
     def detect_group(exp, geno, col_labels):
-        s = ' '.join([str(exp), str(geno)] + [str(x) for x in col_labels]).lower()
-        if 'ttube' in s or 'ttubes' in s:
-            return 'ttubes'
-        if '96' in s:
-            return '96'
-        if '24' in s:
-            return '24'
+        s = " ".join([str(exp), str(geno)] + [str(x) for x in col_labels]).lower()
+        if "ttube" in s or "ttubes" in s:
+            return "ttubes"
+        if "96" in s:
+            return "96"
+        if "24" in s:
+            return "24"
         # fallback: try genotype
         g = str(geno).lower()
-        if 'ttube' in g:
-            return 'ttubes'
-        if '96' in g:
-            return '96'
-        if '24' in g:
-            return '24'
-        return '96'
+        if "ttube" in g:
+            return "ttubes"
+        if "96" in g:
+            return "96"
+        if "24" in g:
+            return "24"
+        return "96"
 
     # collect axes positions for each group
     group_axes = {g: [] for g in groups}
@@ -354,25 +326,32 @@ def plot_file(path: Path):
             cax = fig.add_axes((x1 + pad, y0, cbar_w, y1 - y0))
             gvmin, gvmax = group_ranges[g]
             gradient = np.linspace(gvmin, gvmax, 256).reshape(-1, 1)
-            cax.imshow(gradient, aspect='auto', cmap=cmap_obj, origin='lower', extent=(0, 1, gvmin, gvmax), interpolation='nearest')
+            cax.imshow(
+                gradient,
+                aspect="auto",
+                cmap=cmap_obj,
+                origin="lower",
+                extent=(0, 1, gvmin, gvmax),
+                interpolation="nearest",
+            )
             cax.set_xticks([])
             ticks = np.linspace(gvmin, gvmax, num=5)
             cax.set_yticks(ticks)
             cax.yaxis.tick_right()
-            cax.yaxis.set_label_position('right')
+            cax.yaxis.set_label_position("right")
             try:
                 cax.set_facecolor(parchment)
             except Exception:
                 pass
-            base_fs = plt.rcParams.get('font.size', 10)
-            cax.tick_params(axis='y', labelsize=base_fs)
+            base_fs = plt.rcParams.get("font.size", 10)
+            cax.tick_params(axis="y", labelsize=base_fs)
             # add a small label identifying the group
             cax.set_title(g, fontsize=base_fs, pad=2)
         except Exception:
             pass
 
-    out_png = OUT_DIR / (path.stem.replace(' ', '_') + '_heatmap.png')
-    out_svg = OUT_DIR / (path.stem.replace(' ', '_') + '_heatmap.svg')
+    out_png = OUT_DIR / (path.stem.replace(" ", "_") + "_heatmap.png")
+    out_svg = OUT_DIR / (path.stem.replace(" ", "_") + "_heatmap.svg")
     fig.tight_layout(rect=(0, 0, 0.9, 0.95))
     # save PNG and SVG with explicit non-transparent background matching the
     # figure patch (parchment)
@@ -385,13 +364,13 @@ def plot_file(path: Path):
     except Exception:
         pass
     plt.close(fig)
-    print('Wrote', out_png)
+    print("Wrote", out_png)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     for fname in FILES:
         p = DATA_DIR / fname
         if p.exists():
             plot_file(p)
         else:
-            print('Missing file', p)
+            print("Missing file", p)
