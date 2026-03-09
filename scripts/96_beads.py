@@ -16,7 +16,7 @@ WELL_RE = re.compile(r"^Well([A-Z])(\d{2})")
 # When set in `main`, RUN_ID contains the processed folder name so mapping
 # functions can apply run-specific fixes (e.g. swap strain labels for a
 # particular run that was plated differently).
-RUN_ID: Optional[str] = None
+RUN_ID: str | None = None
 
 # New strain order and treatment mapping (column-based bead sizes)
 # Rows A-D -> SP286, Rows E-H -> dea2^
@@ -144,21 +144,6 @@ def violin_grouped_with_means(df: pd.DataFrame, y: str, title: str, outpath: Pat
 
         # identify groups present
         groups_present = [t for t in TREATMENT_ORDER if not sdf[sdf["treatment"] == t].empty]
-        # one-way ANOVA across all present groups (if at least 2 groups with data)
-        anova_p = None
-        try:
-            arrays = [
-                sdf.loc[sdf["treatment"] == t, y].dropna().values
-                for t in groups_present
-                if len(sdf.loc[sdf["treatment"] == t, y].dropna()) > 0
-            ]
-            if len(arrays) >= 2:
-                anova_res = stats.f_oneway(*arrays)
-                anova_p = (
-                    float(anova_res.pvalue) if hasattr(anova_res, "pvalue") else float(anova_res[1])
-                )
-        except Exception:
-            anova_p = None
 
         # pairwise comparisons vs NO bead control
         control_vals = sdf.loc[sdf["treatment"] == "NO bead", y].dropna().values
@@ -192,7 +177,7 @@ def violin_grouped_with_means(df: pd.DataFrame, y: str, title: str, outpath: Pat
                 adj[mask] = p_adj
 
             # map adjusted p-values to stars
-            for t, p_raw, p_adj in zip(treatments_tested, pvals_arr, adj):
+            for t, _p_raw, p_adj in zip(treatments_tested, pvals_arr, adj, strict=False):
                 star = pval_to_stars(p_adj)
                 sig_map[(strain, t)] = star
 
@@ -285,14 +270,14 @@ def violin_grouped_with_means(df: pd.DataFrame, y: str, title: str, outpath: Pat
     print(f"Saved: {outpath}")
 
 
-def parse_well_from_name(name: str) -> Tuple[Optional[str], Optional[int]]:
+def parse_well_from_name(name: str) -> tuple[str | None, int | None]:
     m = WELL_RE.match(name)
     if not m:
         return None, None
     return m.group(1), int(m.group(2))
 
 
-def map_strain_and_treatment(letter: str, num: int) -> Tuple[str, str]:
+def map_strain_and_treatment(letter: str, num: int) -> tuple[str, str]:
     """Map a well (row letter + column number) to (strain, treatment).
 
     Updated rules (column determines bead size):
@@ -343,8 +328,8 @@ def map_strain_and_treatment(letter: str, num: int) -> Tuple[str, str]:
     return strain, treatment
 
 
-def find_matching_csvs(processed_dir: Path) -> List[Path]:
-    files: List[Path] = []
+def find_matching_csvs(processed_dir: Path) -> list[Path]:
+    files: list[Path] = []
     for p in processed_dir.glob("*.csv"):
         if not p.name.startswith("Well"):
             continue
@@ -368,7 +353,8 @@ def read_one_csv(p: Path) -> pd.DataFrame:
     axis_col = next((c for c in axis_candidates if c in df.columns), None)
     if axis_col is None:
         raise KeyError(
-            f"{p.name} missing required column: axis_major_length (or variants). Columns: {', '.join(df.columns)}"
+            f"{p.name} missing required column: axis_major_length (or variants). Columns: "
+            f"{', '.join(df.columns)}"
         )
 
     out = pd.DataFrame(
@@ -394,7 +380,7 @@ def read_one_csv(p: Path) -> pd.DataFrame:
     return out
 
 
-def build_combined_dataframe(csv_paths: List[Path]) -> pd.DataFrame:
+def build_combined_dataframe(csv_paths: list[Path]) -> pd.DataFrame:
     parts = []
     for p in csv_paths:
         letter, num = parse_well_from_name(p.name)
@@ -472,8 +458,6 @@ def violin_faceted(df: pd.DataFrame, y: str, title: str, outpath: Path) -> None:
                     color="white",
                     fontweight="bold",
                 )
-                # compute significance label position above the bar/error bar
-                sig_y = mu + (sd if sd > 0 else 0.0) + max(mu * 0.03, (sd if sd > 0 else 0.1))
             else:
                 ax.text(0.5, 0.5, "no data", ha="center", va="center", fontsize=8)
                 ax.set_xticks([])
@@ -499,7 +483,7 @@ def violin_faceted(df: pd.DataFrame, y: str, title: str, outpath: Path) -> None:
     print(f"Saved: {outpath}")
 
 
-def main(argv: List[str] | None = None) -> int:
+def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description="DIC-only: violin plots faceted by strain and bead treatment"
     )

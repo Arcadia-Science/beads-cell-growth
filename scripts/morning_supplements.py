@@ -138,7 +138,7 @@ def violin_grouped_with_means(
                 _, p_adj, _, _ = multipletests(pvals_arr[mask], method="holm")
                 adj[mask] = p_adj
 
-            for t, p_raw, p_adj in zip(treatments_tested, pvals_arr, adj):
+            for t, _p_raw, p_adj in zip(treatments_tested, pvals_arr, adj, strict=False):
                 star = pval_to_stars(p_adj)
                 sig_map[(strain, t)] = star
                 # update pval_rows with adjusted p
@@ -164,9 +164,6 @@ def violin_grouped_with_means(
     bar_width = total_width / n_hue * 0.9
     step = total_width / n_hue
 
-    # color palette: seaborn default or None
-    palette = None
-
     for i_t, treatment in enumerate(TREATMENT_ORDER):
         bar_x = []
         bar_h = []
@@ -175,7 +172,7 @@ def violin_grouped_with_means(
             row = stats_df[(stats_df["strain"] == strain) & (stats_df["treatment"] == treatment)]
             if not row.empty and row["count"].iloc[0] > 0:
                 mu = row["mean"].iloc[0]
-                sd = row["std"].iloc[0] if not isnan(row["std"].iloc[0]) else 0.0
+                sd = row["std"].iloc[0] if not np.isnan(row["std"].iloc[0]) else 0.0
             else:
                 mu = 0.0
                 sd = 0.0
@@ -248,7 +245,7 @@ def violin_grouped_with_means(
         if not row_stat.empty:
             try:
                 sd_val = (
-                    float(row_stat["std"].iloc[0]) if not isnan(row_stat["std"].iloc[0]) else 0.0
+                    float(row_stat["std"].iloc[0]) if not np.isnan(row_stat["std"].iloc[0]) else 0.0
                 )
             except Exception:
                 sd_val = 0.0
@@ -313,14 +310,14 @@ def violin_grouped_with_means(
     print(f"Saved: {outpath}")
 
 
-def parse_well_from_name(name: str) -> Tuple[Optional[str], Optional[int]]:
+def parse_well_from_name(name: str) -> tuple[str | None, int | None]:
     m = WELL_RE.match(name)
     if not m:
         return None, None
     return m.group(1), int(m.group(2))
 
 
-def map_strain_and_treatment(letter: str, num: int) -> Tuple[str, str]:
+def map_strain_and_treatment(letter: str, num: int) -> tuple[str, str]:
     """Map a well (row letter + column number) to (strain, treatment).
 
     Mapping rules for the supplements experiment (user-specified):
@@ -372,8 +369,8 @@ def map_strain_and_treatment(letter: str, num: int) -> Tuple[str, str]:
     return strain, treatment
 
 
-def find_matching_csvs(processed_dir: Path) -> List[Path]:
-    files: List[Path] = []
+def find_matching_csvs(processed_dir: Path) -> list[Path]:
+    files: list[Path] = []
     for p in processed_dir.glob("*.csv"):
         if not p.name.startswith("Well"):
             continue
@@ -397,7 +394,8 @@ def read_one_csv(p: Path) -> pd.DataFrame:
     axis_col = next((c for c in axis_candidates if c in df.columns), None)
     if axis_col is None:
         raise KeyError(
-            f"{p.name} missing required column: axis_major_length (or variants). Columns: {', '.join(df.columns)}"
+            f"{p.name} missing required column: axis_major_length (or variants). Columns: "
+            "{', '.join(df.columns)}"
         )
 
     out = pd.DataFrame(
@@ -423,7 +421,7 @@ def read_one_csv(p: Path) -> pd.DataFrame:
     return out
 
 
-def build_combined_dataframe(csv_paths: List[Path]) -> pd.DataFrame:
+def build_combined_dataframe(csv_paths: list[Path]) -> pd.DataFrame:
     parts = []
     for p in csv_paths:
         letter, num = parse_well_from_name(p.name)
@@ -493,7 +491,7 @@ def violin_faceted(df: pd.DataFrame, y: str, title: str, outpath: Path) -> None:
         if not row.empty and row["count"].iloc[0] > 0:
             return (
                 float(row["mean"].iloc[0]),
-                float(row["std"].iloc[0]) if not isnan(row["std"].iloc[0]) else 0.0,
+                float(row["std"].iloc[0]) if not np.isnan(row["std"].iloc[0]) else 0.0,
                 int(row["count"].iloc[0]),
             )
         return 0.0, 0.0, 0
@@ -549,7 +547,7 @@ def violin_faceted(df: pd.DataFrame, y: str, title: str, outpath: Path) -> None:
                 ax.set_ylim(bottom=0)
 
                 # mean inside bars
-                for xi, h in zip(x, heights):
+                for xi, h in zip(x, heights, strict=False):
                     y_text_inside = (h * 0.5) if h > 0 else (h + 0.05)
                     ax.text(
                         xi,
@@ -604,7 +602,7 @@ def violin_faceted(df: pd.DataFrame, y: str, title: str, outpath: Path) -> None:
     print(f"Saved: {outpath}")
 
 
-def main(argv: List[str] | None = None) -> int:
+def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description="DIC-only: violin plots faceted by strain and bead treatment"
     )

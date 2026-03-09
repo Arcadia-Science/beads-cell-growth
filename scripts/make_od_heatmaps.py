@@ -20,7 +20,6 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 rc = getattr(ap.style_defaults, "ARCADIA_MATPLOTLIB_RC_PARAMS", None)
 if rc:
@@ -217,7 +216,7 @@ def plot_file(path: Path):
             except Exception:
                 pass
             # use the same global vmin/vmax across all facets so strains are comparable
-            im = ax.imshow(
+            ax.imshow(
                 mat, aspect="equal", cmap=cmap_obj, vmin=vmin, vmax=vmax, interpolation="nearest"
             )
             # y ticks
@@ -230,7 +229,9 @@ def plot_file(path: Path):
             ncols = mat.shape[1]
             ax.set_xticks(np.arange(ncols))
             # set xtick labels as short versions of col_labels to avoid crowding
-            short_labels = [l if len(l) <= 12 else (l[:9] + "...") for l in col_labels]
+            short_labels = [
+                label if len(label) <= 12 else (label[:9] + "...") for label in col_labels
+            ]
             ax.set_xticklabels(short_labels, rotation=90, fontsize=8)
             # label row/column facets
             if j == 0:
@@ -287,8 +288,6 @@ def plot_file(path: Path):
     for g in groups:
         vals = []
         for ax in group_axes.get(g, []):
-            # find corresponding exp/genotype by matching positions
-            pos = ax.get_position()
             # find which axes index this is
             # search in axes grid
             found = False

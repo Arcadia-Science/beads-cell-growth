@@ -356,7 +356,10 @@ def main(argv=None):
         "--map-96-volume",
         type=float,
         default=1.0,
-        help="Volume (mL) to assign to 96-well 4.5 mm bead samples when mapping to the 1..5 mL x-axis",
+        help=(
+            "Volume (mL) to assign to 96-well 4.5 mm bead samples when mapping to the 1..5 mL "
+            "x-axis",
+        ),
     )
     parser.add_argument("--out-dir", "-o", default=Path.cwd(), type=Path)
     parser.add_argument(
@@ -368,7 +371,7 @@ def main(argv=None):
 
     labels = ["96-well", "24-well", "ttubes"]
     parts = []
-    for path, label in zip(args.paths, labels):
+    for path, label in zip(args.paths, labels, strict=False):
         p = Path(path)
         df = load_source(p, label)
         df = normalize_columns(df)
@@ -377,8 +380,9 @@ def main(argv=None):
 
     big = pd.concat(parts, ignore_index=True)
 
-    # For 96-well, assign the mapped --map-96-volume to 4.5mm bead samples and explicit 'no bead' rows
-    # but do NOT drop other 96-well rows (they may contain DIC measurements for other bead sizes).
+    # For 96-well, assign the mapped --map-96-volume to 4.5mm bead samples and explicit 'no bead'
+    # rows but do NOT drop other 96-well rows (they may contain DIC measurements for other bead
+    # sizes).
     mask_96 = big["__source"] == "96-well"
     if mask_96.any() and "treatment" in big.columns:
         treatment = big["treatment"].astype(str)
