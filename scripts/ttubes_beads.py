@@ -167,69 +167,6 @@ def violin_grouped_with_means(df: pd.DataFrame, y: str, title: str, outpath: Pat
     y_span = (y_max - y_min) if (y_max is not None and y_min is not None) else 0.0
     ann_offset = y_span * 0.03 if y_span else 0.1
 
-    # Replace with per-strain, per-volume one-way ANOVA comparing bead vs no-bead.
-    # For each strain we test each volume (1..5 mL) with SciPy's f_oneway
-    # (equivalent to a two-group ANOVA). Adjust p-values across volumes
-    # per-strain using Holm correction when available.
-    sig_map: dict[tuple[str, str], str] = {}
-
-    def pval_to_stars(p):
-        if p is None or (isinstance(p, float) and (pd.isna(p) or np.isnan(p))):
-            return None
-        try:
-            p = float(p)
-        except Exception:
-            return None
-        if p < 0.001:
-            return "***"
-        if p < 0.01:
-            return "**"
-        if p < 0.05:
-            return "*"
-        return "ns"
-
-    vols = sorted(dfp["volume_ml"].dropna().unique())
-    for strain in dfp["strain"].cat.categories:
-        sdf = dfp[dfp["strain"] == strain]
-        if sdf.empty:
-            continue
-
-        pvals = []
-        tests = []
-        for vol in vols:
-            control_t = f"{int(vol)} mL no bead"
-            bead_t = f"{int(vol)} mL bead"
-            control_vals = sdf.loc[sdf["treatment"] == control_t, y].dropna().values
-            bead_vals = sdf.loc[sdf["treatment"] == bead_t, y].dropna().values
-            if len(control_vals) < 2 or len(bead_vals) < 2:
-                p = np.nan
-            else:
-                try:
-                    anova_res = stats.f_oneway(control_vals, bead_vals)
-                    p = (
-                        float(anova_res.pvalue)
-                        if hasattr(anova_res, "pvalue")
-                        else float(anova_res[1])
-                    )
-                except Exception:
-                    p = np.nan
-            pvals.append(p)
-            tests.append((control_t, bead_t))
-
-        # Multiple-testing correction across volumes for this strain
-        if pvals:
-            pvals_arr = np.array([np.nan if p is None else p for p in pvals], dtype=float)
-            mask = ~np.isnan(pvals_arr)
-            adj = np.full_like(pvals_arr, np.nan)
-            if mask.any():
-                _, p_adj, _, _ = multipletests(pvals_arr[mask], method="holm")
-                adj[mask] = p_adj
-
-            for (control_t, bead_t), _p_raw, p_adj in zip(tests, pvals_arr, adj, strict=False):
-                star = pval_to_stars(p_adj)
-                sig_map[(strain, bead_t)] = star
-                sig_map.setdefault((strain, control_t), None)
-
     for _, row in means.iterrows():
         strain = row["strain"]
         treatment = row["treatment"]
@@ -490,33 +427,50 @@ def violin_faceted(df: pd.DataFrame, y: str, title: str, outpath: Path) -> None:
             )
         return 0.0, 0.0, 0
 
-    # Compute pairwise bead vs no-bead p-values per strain-volume
+    # Pairwise bead vs no-bead Welch's t-tests per strain-volume,
+    # with Holm correction across volumes within each strain.
     sig_map: dict[tuple[str, str], str] = {}
     for strain in dfp["strain"].cat.categories:
         df_strain = dfp[dfp["strain"] == strain]
+        if df_strain.empty:
+            continue
+
+        pvals: list[float] = []
+        vol_tests: list[tuple[str, str]] = []
         for vol in volumes:
             t_no = f"{vol} no bead"
             t_yes = f"{vol} bead"
             g_no = df_strain[df_strain["treatment"] == t_no][y].dropna().values
             g_yes = df_strain[df_strain["treatment"] == t_yes][y].dropna().values
-            label_no = "ns"
-            label_yes = "ns"
-            if len(g_no) > 0 and len(g_yes) > 0:
+            if len(g_no) >= 2 and len(g_yes) >= 2:
                 try:
                     _, pval = stats.ttest_ind(g_no, g_yes, equal_var=False, nan_policy="omit")
-                    pval = float(pval)
-                    if pval <= 0.001:
-                        label_yes = "***"
-                    elif pval <= 0.01:
-                        label_yes = "**"
-                    elif pval <= 0.05:
-                        label_yes = "*"
-                    else:
-                        label_yes = "ns"
+                    pvals.append(float(pval))
                 except Exception:
-                    label_yes = "ns"
-            sig_map[(str(strain), t_no)] = label_no
-            sig_map[(str(strain), t_yes)] = label_yes
+                    pvals.append(np.nan)
+            else:
+                pvals.append(np.nan)
+            vol_tests.append((t_no, t_yes))
+
+        pvals_arr = np.array(pvals, dtype=float)
+        mask = ~np.isnan(pvals_arr)
+        adj = np.full_like(pvals_arr, np.nan)
+        if mask.any():
+            _, p_adj, _, _ = multipletests(pvals_arr[mask], method="holm")
+            adj[mask] = p_adj
+
+        for (t_no, t_yes), p_adj in zip(vol_tests, adj, strict=False):
+            sig_map[(str(strain), t_no)] = None
+            if np.isnan(p_adj):
+                sig_map[(str(strain), t_yes)] = "ns"
+            elif p_adj < 0.001:
+                sig_map[(str(strain), t_yes)] = "***"
+            elif p_adj < 0.01:
+                sig_map[(str(strain), t_yes)] = "**"
+            elif p_adj < 0.05:
+                sig_map[(str(strain), t_yes)] = "*"
+            else:
+                sig_map[(str(strain), t_yes)] = "ns"
 
     for i_row, vol in enumerate(volumes):
         for j_col, strain in enumerate(strains):
