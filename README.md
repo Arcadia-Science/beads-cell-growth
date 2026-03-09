@@ -34,7 +34,7 @@ TODO: Add details about the description of input / output data and links to Zeno
 
 ### Methods
 
-1. Download data from ZENODO LINKS HERE.
+1. Download data from Zenodo: https://zenodo.org/records/18927821?preview=1&token=eyJhbGciOiJIUzUxMiIsImlhdCI6MT[…]R4olNzyETjgfAdhh6FqKadaQRiFqIAffK-UMYqMykTpXRMu9xEf7siIjj83dHIA.
 2. Process data using arcadia-microscopy-files.
 3. Generate figures using .py files listed here to map, statistically analyze, and plot processed data as shown in a given figure.
 
