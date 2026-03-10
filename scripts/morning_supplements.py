@@ -30,9 +30,7 @@ TREATMENT_ORDER = [
 ]
 
 
-def violin_grouped_with_means(
-    df: pd.DataFrame, y: str, title: str, outpath: Path
-) -> None:
+def violin_grouped_with_means(df: pd.DataFrame, y: str, title: str, outpath: Path) -> None:
     outpath.parent.mkdir(parents=True, exist_ok=True)
 
     dfp = df.dropna(subset=[y]).copy()
