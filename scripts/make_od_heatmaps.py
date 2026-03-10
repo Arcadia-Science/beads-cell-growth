@@ -1,6 +1,6 @@
 """Create OD heatmaps from Excel files in Data/.
 
-For each of the two Excel files ('Supplement ODs.xlsx' and 'All ODs.xlsx') this
+For each of the two Excel files ("Baseline_ODs.xlsx" and "Supplement_ODs.xlsx") this
 script builds a grid of small heatmaps facetted by Experiment (rows) and
 genotype (columns). Each small heatmap has two rows: morning (row 0) and
 afternoon (row 1). Columns are ordered in the same sequence as they appear in
@@ -28,11 +28,11 @@ plt.rcParams["savefig.transparent"] = False
 plt.rcParams["image.cmap"] = "magma"
 plt.rcParams["font.size"] = ap.style_defaults.BASE_FONT_SIZE
 
-DATA_DIR = Path("Data")
-OUT_DIR = Path("Data_analysis") / "heatmaps"
+DATA_DIR = Path("data")
+OUT_DIR = DATA_DIR / "heatmaps"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
-FILES = ["Supplement ODs.xlsx", "All ODs.xlsx"]
+FILES = ["Supplement_ODs.xlsx", "Baseline_ODs.xlsx"]
 
 
 def _read_first_sheet(path: Path) -> pd.DataFrame:
@@ -69,12 +69,10 @@ def build_matrices(df: pd.DataFrame):
                 continue
             # build sample keys preserving order of appearance
             sample_keys = []
-            rows = []
             for _, row in sub.iterrows():
                 key = " | ".join(str(row[c]) for c in key_cols)
                 if key not in sample_keys:
                     sample_keys.append(key)
-                rows.append((key, row))
             n = len(sample_keys)
             mat = np.full((2, n), np.nan)
             for _, row in sub.iterrows():
@@ -154,26 +152,6 @@ def plot_file(path: Path):
 
     # reverse the colormap so the gradient is flipped (user request)
     try:
-        # compute per-experiment vmin/vmax so we can draw one scale bar per
-        # experiment (row). This collects finite values across genotypes for
-        # each experiment.
-        experiment_ranges = {}
-        for exp in experiments:
-            vals = []
-            for geno in genotypes:
-                key = (exp, geno)
-                if key not in matrices:
-                    continue
-                mat, _ = matrices[key]
-                f = mat[np.isfinite(mat)]
-                if f.size > 0:
-                    vals.append(f)
-            if len(vals) > 0:
-                allv = np.concatenate(vals)
-                experiment_ranges[exp] = (float(np.nanmin(allv)), float(np.nanmax(allv)))
-            else:
-                experiment_ranges[exp] = (0.0, 1.0)
-        # many Matplotlib colormap objects support .reversed()
         cmap_obj = cmap_obj.reversed()
     except Exception:
         # fallback: if the colormap has a name, attempt to get the '_r' variant

@@ -30,9 +30,7 @@ TREATMENT_ORDER = [
 ]
 
 
-def violin_grouped_with_means(
-    df: pd.DataFrame, y: str, title: str, outpath: Path, clusters: int = 2
-) -> None:
+def violin_grouped_with_means(df: pd.DataFrame, y: str, title: str, outpath: Path) -> None:
     outpath.parent.mkdir(parents=True, exist_ok=True)
 
     dfp = df.dropna(subset=[y]).copy()
@@ -395,7 +393,7 @@ def read_one_csv(p: Path) -> pd.DataFrame:
     if axis_col is None:
         raise KeyError(
             f"{p.name} missing required column: axis_major_length (or variants). Columns: "
-            "{', '.join(df.columns)}"
+            f"{', '.join(df.columns)}"
         )
 
     out = pd.DataFrame(
@@ -462,146 +460,6 @@ def build_combined_dataframe(csv_paths: list[Path]) -> pd.DataFrame:
     return out
 
 
-def violin_faceted(df: pd.DataFrame, y: str, title: str, outpath: Path) -> None:
-    outpath.parent.mkdir(parents=True, exist_ok=True)
-
-    dfp = df.dropna(subset=[y]).copy()
-    if dfp.empty:
-        print(f"No data to plot for {y}")
-        return
-
-    sns.set(style="whitegrid")
-
-    # Facet rows = volume (1-5 mL), cols = strain
-    volumes = [f"{v} mL" for v in (1, 2, 3, 4, 5)]
-    strains = STRAIN_ORDER
-    n_rows = len(volumes)
-    n_cols = len(strains)
-    fig, axes = plt.subplots(n_rows, n_cols, figsize=(n_cols * 3, n_rows * 2.5), squeeze=False)
-
-    # Precompute stats
-    stats_df = (
-        dfp.groupby(["strain", "treatment"], observed=True)[y]
-        .agg(["mean", "std", "count"])
-        .reset_index()
-    )
-
-    def get_stats(strain: str, treatment: str) -> tuple[float, float, int]:
-        row = stats_df[(stats_df["strain"] == strain) & (stats_df["treatment"] == treatment)]
-        if not row.empty and row["count"].iloc[0] > 0:
-            return (
-                float(row["mean"].iloc[0]),
-                float(row["std"].iloc[0]) if not np.isnan(row["std"].iloc[0]) else 0.0,
-                int(row["count"].iloc[0]),
-            )
-        return 0.0, 0.0, 0
-
-    # Compute pairwise bead vs no-bead p-values per strain-volume
-    sig_map: dict[tuple[str, str], str] = {}
-    for strain in dfp["strain"].cat.categories:
-        df_strain = dfp[dfp["strain"] == strain]
-        for vol in volumes:
-            t_no = f"{vol} no bead"
-            t_yes = f"{vol} bead"
-            g_no = df_strain[df_strain["treatment"] == t_no][y].dropna().values
-            g_yes = df_strain[df_strain["treatment"] == t_yes][y].dropna().values
-            label_no = "ns"
-            label_yes = "ns"
-            if len(g_no) > 0 and len(g_yes) > 0:
-                try:
-                    _, pval = stats.ttest_ind(g_no, g_yes, equal_var=False, nan_policy="omit")
-                    pval = float(pval)
-                    if pval <= 0.001:
-                        label_yes = "***"
-                    elif pval <= 0.01:
-                        label_yes = "**"
-                    elif pval <= 0.05:
-                        label_yes = "*"
-                    else:
-                        label_yes = "ns"
-                except Exception:
-                    label_yes = "ns"
-            sig_map[(str(strain), t_no)] = label_no
-            sig_map[(str(strain), t_yes)] = label_yes
-
-    for i_row, vol in enumerate(volumes):
-        for j_col, strain in enumerate(strains):
-            ax = axes[i_row][j_col]
-
-            t_no = f"{vol} no bead"
-            t_yes = f"{vol} bead"
-
-            mu_no, sd_no, cnt_no = get_stats(strain, t_no)
-            mu_yes, sd_yes, cnt_yes = get_stats(strain, t_yes)
-
-            if cnt_no == 0 and cnt_yes == 0:
-                ax.text(0.5, 0.5, "no data", ha="center", va="center", fontsize=8)
-                ax.set_xticks([])
-                ax.set_ylim(bottom=0)
-            else:
-                x = [0, 1]
-                heights = [mu_no, mu_yes]
-                errs = [sd_no, sd_yes]
-                ax.bar(x, heights, yerr=errs, width=0.6, color=["C0", "C1"], alpha=0.9)
-                ax.set_xticks([])
-                ax.set_ylim(bottom=0)
-
-                # mean inside bars
-                for xi, h in zip(x, heights, strict=False):
-                    y_text_inside = (h * 0.5) if h > 0 else (h + 0.05)
-                    ax.text(
-                        xi,
-                        y_text_inside,
-                        f"{h:.2f}",
-                        ha="center",
-                        va="center",
-                        fontsize=7,
-                        color="white",
-                        fontweight="bold",
-                    )
-
-                # significance: show above the bead bar if present
-                sig_yes = sig_map.get((str(strain), t_yes), None)
-                sig_no = sig_map.get((str(strain), t_no), None)
-                if sig_yes and sig_yes != "ns":
-                    sig_y = (
-                        mu_yes
-                        + (sd_yes if sd_yes > 0 else 0.0)
-                        + max(mu_yes * 0.03, (sd_yes if sd_yes > 0 else 0.1))
-                    )
-                    ax.text(
-                        1, sig_y, sig_yes, ha="center", va="bottom", fontsize=8, fontweight="bold"
-                    )
-                if sig_no and sig_no != "ns" and not t_no.endswith("no bead"):
-                    sig_y = (
-                        mu_no
-                        + (sd_no if sd_no > 0 else 0.0)
-                        + max(mu_no * 0.03, (sd_no if sd_no > 0 else 0.1))
-                    )
-                    ax.text(
-                        0, sig_y, sig_no, ha="center", va="bottom", fontsize=8, fontweight="bold"
-                    )
-
-            # Titles and labels
-            if i_row == 0:
-                ax.set_title(strain.replace("^", "Δ"), fontsize=9)
-            if j_col == 0:
-                if y == "length":
-                    ax.set_ylabel(f"{vol}\nlength (µm)")
-                elif y == "area":
-                    ax.set_ylabel(f"{vol}\narea (µm²)")
-                else:
-                    ax.set_ylabel(vol)
-            else:
-                ax.set_ylabel("")
-
-    fig.suptitle(title, y=1.02)
-    fig.tight_layout()
-    fig.savefig(str(outpath), dpi=300)
-    plt.close(fig)
-    print(f"Saved: {outpath}")
-
-
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description="DIC-only: violin plots faceted by strain and bead treatment"
@@ -619,13 +477,6 @@ def main(argv: list[str] | None = None) -> int:
         type=Path,
         default=None,
         help="Output directory (default: processed-dir)",
-    )
-    parser.add_argument(
-        "--clusters",
-        "-k",
-        type=int,
-        default=2,
-        help="Number of clusters to form per-strain for grouping letters (default: 2)",
     )
     args = parser.parse_args(argv)
 
@@ -656,7 +507,6 @@ def main(argv: list[str] | None = None) -> int:
         y="length",
         title="DIC length (µm) by strain and bead treatment (means labeled)",
         outpath=out_dir / "bar_length_grouped.svg",
-        clusters=args.clusters,
     )
 
     violin_grouped_with_means(
@@ -664,7 +514,6 @@ def main(argv: list[str] | None = None) -> int:
         y="area",
         title="DIC area (µm²) by strain and bead treatment (means labeled)",
         outpath=out_dir / "bar_area_grouped.svg",
-        clusters=args.clusters,
     )
 
     print("Done.")
