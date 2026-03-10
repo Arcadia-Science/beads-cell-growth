@@ -1,75 +1,90 @@
 # 2026-bead-growth
 
 ## Purpose
-The following repository has the graphing .py files that allow us to take processed data (using arcadia-microscopy-tools) and graph it as shown in the publication. .xlsx files include both the raw data ABS data and converted OD averages.
+
+This repository contains the plotting and statistical analysis scripts used to generate figures for the pub ["Adding a single glass bead to liquid cultures improves cell culture quality."](https://doi.org/10.57844/arcadia-mu7g-v6rz) It also includes raw absorbance (ABS) and processed optical density (OD) data from an iD5 plate reader. Microscopy data (processed with [arcadia-microscopy-tools](https://github.com/Arcadia-Science/arcadia-microscopy-tools) and Cellpose) is available on [Zenodo](https://zenodo.org/records/18927821).
 
 ## Installation and Setup
-This repository uses uv to manage software environments and installations. You can find operating system-specific instructions for installing uv [here](https://docs.astral.sh/uv/getting-started/installation/). After installing uv, run the following commands to create the pipeline run environment.
 
-```{bash}
-# Clone the repository
+This repository uses [uv](https://docs.astral.sh/uv/getting-started/installation/) to manage software environments and installations. Run the following commands to create the development environment:
+
+```bash
 git clone https://github.com/Arcadia-Science/2026-bead-growth.git
 cd 2026-bead-growth
 
-# Create and activate a virtual environment
 uv venv --python 3.12
 source .venv/bin/activate
 
-# Install dependencies
 uv sync --all-extras
 ```
 
-## Data
-ODs
-Input data: All raw OD data was processed, and then manually labelled and split by experiment into 'All ODs.xlsx' and 'Supplement ODs.xlsx'. 
-Processing: These .xlsx files were then graphed in Figures 2-6 using 'make_od_heatmaps.py.'
-Output: Figure 2-5 heatmaps and line graphs in Figure 6.
-
-Microscopy
-Input data: All raw data, avaiable in Zenodo https://zenodo.org/records/18927821?preview=1&token=eyJhbGciOiJIUzUxMiIsImlhdCI6MT[…]R4olNzyETjgfAdhh6FqKadaQRiFqIAffK-UMYqMykTpXRMu9xEf7siIjj83dHIA, was processed using cellpose. Then, the generated .csv files were used as inputs in Figures 2-6 using the following scripts:
-Figure 2. 24-WELL PLATES => 24_beads.py
-Figure 3. 96-WELL PLATES => 96_beads.py
-Figure 5. => aggregate_multi_sources.py
-Figure 6. SUPPLEMENTS => morning_supplements.py
-Figure 1. TEST TUBES => ttubes_beads.py
-Output: Figure 2-5 bar graphs and line graphs in Figure 6.
 
 ## Overview
-Microscopy
-All microscopy scripts are intuitively titled to match data from the 96-WELL PLATES, 24-WELL PLATES, SUPPLEMENTS, and TEST TUBES experiments. These scripts are for plotting and staistical analysis.
 
-ODs
-96-WELL PLATES
-~260116_rom_96well_beads_day1.xlsx => This is the wellscan ABS data collected on Day1 for the 96-well plate OD measurements. Inside it is the data converted to ODs and the data averaged across the 5 well readings.
-~260116_rom_96well_beads_day2.xlsx => This is the wellscan ABS data collected on Day2 for the 96-well plate OD measurements. Inside it is the data converted to ODs and the data averaged across the 5 well readings. test tubes.
+### Folder Structure
 
-TEST TUBES
-~260122_rom_ttubes_pombe_beads_pub.xlsx => This is the wellscan ABS data collected in the morning for the test tube OD measurements. Inside it is the data converted to ODs and the data averaged across the 5 well readings.
-~260122_rom_ttubes_2_pombe_beads_pub.xlsx => This is the wellscan ABS data collected in the afternoon for the test tube OD measurements. Inside it is the data converted to ODs and the data averaged across the 5 well readings.
+| Path | Contents |
+|---|---|
+| `scripts/` | Python scripts for plotting and statistical analysis |
+| `data/experimental/` | Per-experiment XLSX files containing raw ABS and processed OD measurements |
+| `data/Baseline_ODs.xlsx` | Manually labelled and aggregated OD data for baseline experiments (test tubes, 24-well, 96-well) |
+| `data/Supplement_ODs.xlsx` | Manually labelled and aggregated OD data for supplement experiments |
 
-24-WELL PLATES
-~260122_rom_24plates_pombe_beads_pub.xlsx => This is the wellscan ABS data collected in the morning for the
-24-well plate OD measurements. Inside it is the data converted to ODs and the data averaged across the 5 well readings.
-~260122_rom_24plates_2_pombe_beads_pub.xlsx => This is the wellscan ABS data collected in the afternoon for the 24-well plate OD measurements. Inside it is the data converted to ODs and the data averaged across the 5 well readings.
 
-SUPPLEMENTS
-~260123_rom_supplements_pombe_beads_pub.xlsx => This is the wellscan ABS data collected in the morning for the 24-well plate supplements OD measurements. Inside it is the data converted to ODs and the data averaged across the 5 well readings.
-~260123_rom_supplements_2_pombe_beads_pub.xlsx => This is the wellscan ABS data collected in the afternoon for the 24-well plate supplements OD measurements. Inside it is the data converted to ODs and the data averaged across the 5 well readings.
+### Mapping Experiments and Figures to Scripts
 
-### Description of the folder structure
-'Scripts' This folder contains all scripts used for plotting data.
-'ODs' This folder contains all raw (ABS) and processed (OD) data from the id5 plate reader.
+Each microscopy script reads per-well CSVs from Cellpose-processed microscopy data, maps well positions to strains and treatments, computes descriptive statistics, runs pairwise comparisons (Welch's t-test, Holm-corrected), and generates publication figures.
 
-### Methods
-1. Download data from [ZENODO LINKS HERE](https://zenodo.org/records/18927821?preview=1&token=eyJhbGciOiJIUzUxMiIsImlhdCI6MTc3MzA5MTIxNSwiZXhwIjoxNzczOTY0Nzk5fQ.eyJpZCI6IjcwM2JiMjhlLWU3OGUtNDk4Mi04YmZlLTJmMDkyNTYzYTU5NyIsImRhdGEiOnt9LCJyYW5kb20iOiIwNTI1ZjQwOWY2MGQ0NzMxYjY0ZDRlMzJmYTkwMGUzZSJ9.RSJb-JaX9yWOKu6Cq8WASVKR4olNzyETjgfAdhh6FqKadaQRiFqIAffK-UMYqMykTpXRMu9xEf7siIjj83dHIA).
-2. Process data using arcadia-microscopy-files.
-3. Generate figures using .py files listed here to map, statistically analyze, and plot processed data as shown in a given figure.
+| Figure | Experiment | Script |
+|---|---|---|
+| Figure 1 | Test tubes | `ttubes_beads.py` |
+| Figure 2 | 24-well plates | `24_beads.py` |
+| Figure 3 | 96-well plates | `96_beads.py` |
+| Figure 5 | Cross-vessel aggregate | `aggregate_multi_sources.py` |
+| Figure 6 | Supplements | `morning_supplements.py` |
+
+OD heatmaps for Figures 2-6 are generated from `Baseline_ODs.xlsx` and `Supplement_ODs.xlsx` by `make_od_heatmaps.py`.
+
+
+### Experimental OD Data
+
+Each file in `data/experimental/` contains the raw wellscan ABS data, the converted OD values, and the averaged readings across 5 wells per condition. These measurements were manually labelled and split by experiment into `Baseline_ODs.xlsx` and `Supplement_ODs.xlsx`.
+
+| Experiment | File | Timepoint |
+|---|---|---|
+| 96-well plates | `260115_rom_96well_beads_day1.xlsx` | Day 1 |
+| 96-well plates | `260116_rom_96well_beads_day2.xlsx` | Day 2 |
+| Test tubes | `260122_rom_ttubes_pombe_beads_pub.xlsx` | Morning |
+| Test tubes | `260122_rom_ttubes_2_pombe_beads_pub.xlsx` | Afternoon |
+| 24-well plates | `260122_rom_24plates_pombe_beads_pub.xlsx` | Morning |
+| 24-well plates | `260122_rom_24plates_2_pombe_beads_pub.xlsx` | Afternoon |
+| Supplements | `260123_rom_supplements_pombe_beads_pub.xlsx` | Morning |
+| Supplements | `260123_rom_supplements_2_pombe_beads_pub.xlsx` | Afternoon |
+
+### TODO:
+
+1. Is the processed microscopy data (or at least the output CSV files) being uploaded to Zenodo? (then people wouldn't have to process the microscopy data themselves).
+2. Update section below accordingly.
+3. Add modal script and example notebook.
+4. Map JOBS run to script
+5. Add compute specs (Macbook + Modal GPU info)
+
+
+### Reproducing Figures
+
+1. Download microscopy data from [Zenodo](https://zenodo.org/records/18927821).
+2. Process raw images using [arcadia-microscopy-tools](https://github.com/Arcadia-Science/arcadia-microscopy-tools).
+3. Run the corresponding script to generate each figure (see table above).
 
 ### Compute Specifications
-No compute resources were used to process this data.
 
-## Contributing
-Román Ramos Báez
-Brae Bigge
-Ben Braverman
-Ryan Lane
+
+
+## Contributors
+
+- Román Ramos Báez
+- Brae Bigge
+- Ben Braverman
+- Ryan Lane
+
+See how we recognize [feedback and contributions to our code](https://github.com/Arcadia-Science/arcadia-software-handbook/blob/main/guides-and-standards/guide--credit-for-contributions.md).
