@@ -152,26 +152,6 @@ def plot_file(path: Path):
 
     # reverse the colormap so the gradient is flipped (user request)
     try:
-        # compute per-experiment vmin/vmax so we can draw one scale bar per
-        # experiment (row). This collects finite values across genotypes for
-        # each experiment.
-        experiment_ranges = {}
-        for exp in experiments:
-            vals = []
-            for geno in genotypes:
-                key = (exp, geno)
-                if key not in matrices:
-                    continue
-                mat, _ = matrices[key]
-                f = mat[np.isfinite(mat)]
-                if f.size > 0:
-                    vals.append(f)
-            if len(vals) > 0:
-                allv = np.concatenate(vals)
-                experiment_ranges[exp] = (float(np.nanmin(allv)), float(np.nanmax(allv)))
-            else:
-                experiment_ranges[exp] = (0.0, 1.0)
-        # many Matplotlib colormap objects support .reversed()
         cmap_obj = cmap_obj.reversed()
     except Exception:
         # fallback: if the colormap has a name, attempt to get the '_r' variant
