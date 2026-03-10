@@ -69,12 +69,10 @@ def build_matrices(df: pd.DataFrame):
                 continue
             # build sample keys preserving order of appearance
             sample_keys = []
-            rows = []
             for _, row in sub.iterrows():
                 key = " | ".join(str(row[c]) for c in key_cols)
                 if key not in sample_keys:
                     sample_keys.append(key)
-                rows.append((key, row))
             n = len(sample_keys)
             mat = np.full((2, n), np.nan)
             for _, row in sub.iterrows():
