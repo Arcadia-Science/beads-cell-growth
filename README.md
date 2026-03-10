@@ -61,7 +61,7 @@ SUPPLEMENTS
 'ODs' This folder contains all raw (ABS) and processed (OD) data from the id5 plate reader.
 
 ### Methods
-1. Download data from ZENODO LINKS HERE.
+1. Download data from [ZENODO LINKS HERE](https://zenodo.org/records/18927821?preview=1&token=eyJhbGciOiJIUzUxMiIsImlhdCI6MTc3MzA5MTIxNSwiZXhwIjoxNzczOTY0Nzk5fQ.eyJpZCI6IjcwM2JiMjhlLWU3OGUtNDk4Mi04YmZlLTJmMDkyNTYzYTU5NyIsImRhdGEiOnt9LCJyYW5kb20iOiIwNTI1ZjQwOWY2MGQ0NzMxYjY0ZDRlMzJmYTkwMGUzZSJ9.RSJb-JaX9yWOKu6Cq8WASVKR4olNzyETjgfAdhh6FqKadaQRiFqIAffK-UMYqMykTpXRMu9xEf7siIjj83dHIA).
 2. Process data using arcadia-microscopy-files.
 3. Generate figures using .py files listed here to map, statistically analyze, and plot processed data as shown in a given figure.
 
