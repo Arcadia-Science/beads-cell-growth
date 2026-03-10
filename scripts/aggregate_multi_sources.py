@@ -336,11 +336,6 @@ def plot_strain_facets(df_summary: pd.DataFrame, strain: str, outpath: Path) -> 
     plt.close(fig)
 
 
-# The metric-specific 'by_volume' plotting function was removed per user request.
-# If you later want to restore metric-specific plots, re-add a `plot_metric` function
-# or call `plot_metric` from a separate script.
-
-
 def main(argv=None):
     parser = argparse.ArgumentParser(
         description="Aggregate multiple processed folders and plot mean length/area by volume"
