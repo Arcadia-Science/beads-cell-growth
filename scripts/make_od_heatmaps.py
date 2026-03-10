@@ -1,6 +1,6 @@
 """Create OD heatmaps from Excel files in Data/.
 
-For each of the two Excel files ('Supplement ODs.xlsx' and 'All ODs.xlsx') this
+For each of the two Excel files ("Baseline_ODs.xlsx" and "Supplement_ODs.xlsx") this
 script builds a grid of small heatmaps facetted by Experiment (rows) and
 genotype (columns). Each small heatmap has two rows: morning (row 0) and
 afternoon (row 1). Columns are ordered in the same sequence as they appear in
@@ -28,11 +28,11 @@ plt.rcParams["savefig.transparent"] = False
 plt.rcParams["image.cmap"] = "magma"
 plt.rcParams["font.size"] = ap.style_defaults.BASE_FONT_SIZE
 
-DATA_DIR = Path("Data")
-OUT_DIR = Path("Data_analysis") / "heatmaps"
+DATA_DIR = Path("data")
+OUT_DIR = DATA_DIR / "heatmaps"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
-FILES = ["Supplement ODs.xlsx", "All ODs.xlsx"]
+FILES = ["Supplement_ODs.xlsx", "Baseline_ODs.xlsx"]
 
 
 def _read_first_sheet(path: Path) -> pd.DataFrame:
