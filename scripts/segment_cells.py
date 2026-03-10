@@ -49,6 +49,11 @@ def get_nd2_paths(prefix: str) -> list[str]:
 def process_nd2_file(nd2_path_str: str, output_prefix: str) -> tuple[str, int]:
     """Segment cells in a single ND2 file and write results to S3.
 
+    This function runs on a Modal T4 GPU container with up to 10 containers
+    running concurrently.  Input ND2 files are read from, and outputs are
+    written back to, an S3 bucket mounted as a local filesystem via
+    ``modal.CloudBucketMount``.
+
     Preprocessing differs by channel type: fluorescence channels (FITC, TRITC,
     DAPI) receive difference-of-Gaussians background subtraction before
     percentile rescaling, while the DIC channel is only rescaled.
