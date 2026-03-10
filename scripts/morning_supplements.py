@@ -31,7 +31,7 @@ TREATMENT_ORDER = [
 
 
 def violin_grouped_with_means(
-    df: pd.DataFrame, y: str, title: str, outpath: Path, clusters: int = 2
+    df: pd.DataFrame, y: str, title: str, outpath: Path
 ) -> None:
     outpath.parent.mkdir(parents=True, exist_ok=True)
 
@@ -480,13 +480,6 @@ def main(argv: list[str] | None = None) -> int:
         default=None,
         help="Output directory (default: processed-dir)",
     )
-    parser.add_argument(
-        "--clusters",
-        "-k",
-        type=int,
-        default=2,
-        help="Number of clusters to form per-strain for grouping letters (default: 2)",
-    )
     args = parser.parse_args(argv)
 
     processed = args.processed_dir
@@ -516,7 +509,6 @@ def main(argv: list[str] | None = None) -> int:
         y="length",
         title="DIC length (µm) by strain and bead treatment (means labeled)",
         outpath=out_dir / "bar_length_grouped.svg",
-        clusters=args.clusters,
     )
 
     violin_grouped_with_means(
@@ -524,7 +516,6 @@ def main(argv: list[str] | None = None) -> int:
         y="area",
         title="DIC area (µm²) by strain and bead treatment (means labeled)",
         outpath=out_dir / "bar_area_grouped.svg",
-        clusters=args.clusters,
     )
 
     print("Done.")
