@@ -33,7 +33,7 @@ uv sync --all-extras
 
 ### Mapping Experiments and Figures to Scripts
 
-Each microscopy script reads per-well CSVs from Cellpose-processed microscopy data, maps well positions to strains and treatments, computes descriptive statistics, runs pairwise comparisons (Welch's t-test, Holm-corrected), and generates publication figures.
+Each microscopy script reads CSV files containing single-cell morphology measurements. These CSVs are produced by processing microscopy images with Cellpose; there is one CSV per field of view, and multiple fields of view per well. The scripts aggregate all CSVs for each well, map well positions to corresponding strains and treatments, compute descriptive statistics, perform pairwise comparisons (using Welch's t-test with Holm correction), and generate the figures included in the publication.
 
 | Figure | Experiment | Script |
 |---|---|---|
