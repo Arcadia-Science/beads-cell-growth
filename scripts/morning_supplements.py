@@ -395,7 +395,7 @@ def read_one_csv(p: Path) -> pd.DataFrame:
     if axis_col is None:
         raise KeyError(
             f"{p.name} missing required column: axis_major_length (or variants). Columns: "
-            "{', '.join(df.columns)}"
+            f"{', '.join(df.columns)}"
         )
 
     out = pd.DataFrame(
