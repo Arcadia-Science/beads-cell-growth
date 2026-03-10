@@ -37,11 +37,13 @@ Each microscopy script reads CSV files containing single-cell morphology measure
 
 | Figure | Experiment | Script |
 |---|---|---|
-| Figure 1 | Test tubes | `ttubes_beads.py` |
-| Figure 2 | 24-well plates | `24_beads.py` |
-| Figure 3 | 96-well plates | `96_beads.py` |
-| Figure 5 | Cross-vessel aggregate | `aggregate_multi_sources.py` |
-| Figure 6 | Supplements | `morning_supplements.py` |
+| Figure 1 | Experimental setup | - |
+| Figure 2 | Test tubes | `ttubes_beads.py` |
+| Figure 3 | 24-well plates | `24_beads.py` |
+| Figure 4 | 96-well plates | `96_beads.py` |
+| Figure 5 | Aggregate WT | `aggregate_multi_sources.py` |
+| Figure 6 | Aggregate mutant | `aggregate_multi_sources.py` |
+| Figure 7 | Supplements | `morning_supplements.py` |
 
 OD heatmaps for Figures 2-6 are generated from `Baseline_ODs.xlsx` and `Supplement_ODs.xlsx` by `make_od_heatmaps.py`.
 
