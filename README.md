@@ -21,9 +21,18 @@ uv sync --all-extras
 
 ## Data
 ODs
-Input data: Each *.xlsx files in the ODs folder has the raw ABS wellscan data taken from the id5 plate reader, as well as the processed average ODs calculated from the ABS values.
-Processing: The heatmaps were derived from this data using make_od_heatmaps.py.
-Here is information behind each experiment: 
+Input data: All raw OD data was processed, and then manually labelled and split by experiment into 'All ODs.xlsx' and 'Supplement ODs.xlsx'. 
+Processing: These .xlsx files were then graphed in Figures 2-6 using 'make_od_heatmaps.py.'
+Output: Figure 2-5 heatmaps and line graphs in Figure 6.
+
+Microscopy
+Input data: All raw data, avaiable in Zenodo https://zenodo.org/records/18927821?preview=1&token=eyJhbGciOiJIUzUxMiIsImlhdCI6MT[…]R4olNzyETjgfAdhh6FqKadaQRiFqIAffK-UMYqMykTpXRMu9xEf7siIjj83dHIA, was processed using cellpose. Then, the generated .csv files were used as inputs in Figures 2-6 using the following scripts:
+Figure 2. 24-WELL PLATES => 24_beads.py
+Figure 3. 96-WELL PLATES => 96_beads.py
+Figure 5. => aggregate_multi_sources.py
+Figure 6. SUPPLEMENTS => morning_supplements.py
+Figure 1. TEST TUBES => ttubes_beads.py
+Output: Figure 2-5 bar graphs and line graphs in Figure 6.
 
 ## Overview
 Microscopy
