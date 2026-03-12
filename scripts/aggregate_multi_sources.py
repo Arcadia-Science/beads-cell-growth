@@ -162,10 +162,9 @@ def main():
     summary = summary.merge(od_df, on=merge_keys, how="left")
     summary.to_csv(output_csv, index=False)
     print(f"Summary merged with Input_ODs.csv and exported to {output_csv}")
+    output_png = output_csv.replace(".csv", ".png")
+    plot_facets(output_csv, output_png)
 
 
 if __name__ == "__main__":
-    if len(sys.argv) == 3 and sys.argv[1].endswith(".csv"):
-        plot_facets(sys.argv[1], sys.argv[2])
-    else:
-        main()
+    main()
