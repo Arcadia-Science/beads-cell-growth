@@ -1,8 +1,20 @@
-import sys
 from pathlib import Path
 
 import matplotlib.pyplot as plt
 import pandas as pd
+
+REPO_ROOT = Path(__file__).resolve().parent.parent
+
+# UPDATE THIS TO THE CORRECT PATH TO THE PROCESSED DATA
+# PROCESSED_DIR = REPO_ROOT / "data" / "processed"
+PROCESSED_DIR = Path("/Users/ryanlane/arc_nas_mirror/Hina/Roman/")
+PROCESSED_CSV_DIRS = {
+    "96-well": PROCESSED_DIR / "2026-01-16" / "20260116_094944_372",
+    "24-well": PROCESSED_DIR / "2026-01-22" / "20260122_113404_129",
+    "ttubes": PROCESSED_DIR / "2026-01-22" / "20260122_111821_521",
+}
+OD_PATH = REPO_ROOT / "data" / "Baseline_ODs_stdev.csv"
+OUTPUT_CSV = REPO_ROOT / "data" / "aggregated_summary.csv"
 
 
 def summarize(df: pd.DataFrame) -> pd.DataFrame:
@@ -75,27 +87,12 @@ def plot_facets(summary_csv, output_png):
 
 
 def main():
-    """Aggregate microscopy data from multiple sources into a single CSV file.
-
-    Usage: python aggregate_multi_sources.py <processed_folder1> <processed_folder2> ... <output_csv>
-
-    Args:
-        processed_folder1: Path to the first processed folder containing microscopy data.
-        processed_folder2: Path to the second processed folder containing microscopy data.
-        ...: Additional processed folders containing microscopy data.
-        output_csv: Path to the output CSV file.
-    """
-    if len(sys.argv) < 3:
-        print(
-            "Usage: python aggregate_multi_sources.py <processed_folder1> <processed_folder2> ... <output_csv>"
-        )
-        sys.exit(1)
-    *input_folders, output_csv = sys.argv[1:]
+    """Aggregate microscopy data from multiple sources into a single CSV file."""
     dfs = []
-    experiment_labels = ["96-well", "24-well", "ttubes"]
-    for i, folder in enumerate(input_folders):
-        folder_path = Path(folder)
-        experiment = experiment_labels[i] if i < len(experiment_labels) else f"exp_{i + 1}"
+    for experiment, folder_path in PROCESSED_CSV_DIRS.items():
+        if not folder_path.exists():
+            print(f"Warning: {folder_path} not found, skipping.")
+            continue
         for csv_file in folder_path.glob("*.csv"):
             df = pd.read_csv(csv_file)
             df["experiment"] = experiment
@@ -140,15 +137,12 @@ def main():
             dfs.append(df)
     if not dfs:
         print("No CSV files found in input folders.")
-        sys.exit(1)
+        return
     big = pd.concat(dfs, ignore_index=True)
-    # Check for 96-well experiment rows
     n_96well = (big["experiment"] == "96-well").sum() if "experiment" in big.columns else 0
     print(f"Rows with experiment='96-well': {n_96well}")
     summary = summarize(big)
-    # Merge with Input_ODs.csv
-    od_path = "/Users/roman/Repositories/2026-pombe-beads/Data_analysis/Input_ODs.csv"
-    od_df = pd.read_csv(od_path)
+    od_df = pd.read_csv(OD_PATH)
     od_df.columns = [c.strip() for c in od_df.columns]
     od_df = od_df.rename(columns={"beads": "bead_present", "volume": "volume_ml"})
     od_df["bead_present"] = (
@@ -160,10 +154,10 @@ def main():
     od_df["volume_ml"] = pd.to_numeric(od_df["volume_ml"], errors="coerce")
     merge_keys = ["experiment", "strain", "bead_present", "volume_ml"]
     summary = summary.merge(od_df, on=merge_keys, how="left")
-    summary.to_csv(output_csv, index=False)
-    print(f"Summary merged with Input_ODs.csv and exported to {output_csv}")
-    output_png = output_csv.replace(".csv", ".png")
-    plot_facets(output_csv, output_png)
+    summary.to_csv(OUTPUT_CSV, index=False)
+    print(f"Summary merged with OD data and exported to {OUTPUT_CSV}")
+    output_png = str(OUTPUT_CSV).replace(".csv", ".png")
+    plot_facets(str(OUTPUT_CSV), output_png)
 
 
 if __name__ == "__main__":
