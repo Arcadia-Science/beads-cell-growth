@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This repository contains the plotting and statistical analysis scripts used to generate figures for the pub ["Adding a single glass bead to liquid cultures improves cell culture quality."](https://doi.org/10.57844/arcadia-mu7g-v6rz) It also includes raw absorbance (ABS) and processed optical density (OD) data from an iD5 plate reader. Microscopy data (processed with [arcadia-microscopy-tools](https://github.com/Arcadia-Science/arcadia-microscopy-tools) and Cellpose) is available on [Zenodo](https://zenodo.org/records/18927821).
+This repository contains the plotting and statistical analysis scripts used to generate figures for the pub ["Adding a single glass bead to liquid cultures improves cell culture quality."](https://doi.org/10.57844/arcadia-mu7g-v6rz) It also includes raw absorbance (ABS) and processed optical density (OD) data from an iD5 plate reader. Microscopy data (processed with [arcadia-microscopy-tools](https://github.com/Arcadia-Science/arcadia-microscopy-tools) and [Cellpose](https://github.com/MouseLand/cellpose)) is available on [Zenodo](https://zenodo.org/records/18927821).
 
 ## Installation and Setup
 
@@ -26,14 +26,16 @@ uv sync --all-extras
 | Path | Contents |
 |---|---|
 | `scripts/` | Python scripts for plotting and statistical analysis |
-| `data/experimental/` | Per-experiment XLSX files containing raw ABS and processed OD measurements |
-| `data/Baseline_ODs.xlsx` | Manually labelled and aggregated OD data for baseline experiments (test tubes, 24-well, 96-well) |
-| `data/Supplement_ODs.xlsx` | Manually labelled and aggregated OD data for supplement experiments |
+| `data/microscopy/` | Example ND2 microscopy images of *S. pombe* cells |
+| `data/plate-reader/` | Per-experiment XLSX files containing raw ABS and processed OD measurements |
+| `data/Baseline_ODs.csv` | Manually labelled and aggregated OD data for baseline experiments (test tubes, 24-well, 96-well) |
+| `data/Supplement_ODs.csv` | Manually labelled and aggregated OD data for supplement experiments |
+| `data/Baseline_ODs_stdev.csv` | Reformatted version of `Baseline_ODs.csv` that also includes standard deviations |
 
 
-### Mapping Experiments and Figures to Scripts
+### Mapping Experiments and Figures to Scripts and Input Data Sources
 
-Each microscopy script reads CSV files containing single-cell morphology measurements. These CSVs are produced by processing microscopy images with Cellpose; there is one CSV per field of view, and multiple fields of view per well. The scripts aggregate all CSVs for each well, map well positions to corresponding strains and treatments, compute descriptive statistics, perform pairwise comparisons (using Welch's t-test with Holm correction), and generate the figures included in the publication.
+Each microscopy script reads CSV files containing single-cell morphology measurements. These CSVs are produced by processing microscopy images with `scripts/segment_cells.py`, which uses Cellpose for cell segmentation. There is one CSV per field of view, and multiple fields of view per well. The scripts aggregate all CSVs for each well, map well positions to corresponding strains and treatments, compute descriptive statistics, perform pairwise comparisons (using Welch's t-test with Holm correction), and generate the figures included in the publication.
 
 | Figure | Experiment | Script |
 |---|---|---|
@@ -45,31 +47,25 @@ Each microscopy script reads CSV files containing single-cell morphology measure
 | Figure 6 | Aggregate mutant | `aggregate_multi_sources.py` |
 | Figure 7 | Supplements | `morning_supplements.py` |
 
-OD heatmaps for Figures 2-6 are generated from `Baseline_ODs.xlsx` and `Supplement_ODs.xlsx` by `make_od_heatmaps.py`.
+OD heatmaps for Figures 2–4 are generated from `Baseline_ODs.csv` and `Supplement_ODs.csv` by `make_od_heatmaps.py`.
+
+OD line plots for Figures 5–6 are generated from `Baseline_ODs_stdev.csv` by `aggregate_multi_sources.py`. `Baseline_ODs_stdev.csv` contains the same measurements as `Baseline_ODs.csv`, but reformatted so that each row represents a unique experiment/strain/bead/volume combination, and it additionally includes standard deviation columns for each measurement.
 
 
 ### Experimental OD Data
 
-Each file in `data/experimental/` contains the raw wellscan ABS data, the converted OD values, and the averaged readings across 5 wells per condition. These measurements were manually labelled and split by experiment into `Baseline_ODs.xlsx` and `Supplement_ODs.xlsx`.
+For more information, see the [plate reader data README](data/plate-reader/README.md).
 
-| Experiment | File | Timepoint |
-|---|---|---|
-| 96-well plates | `260115_rom_96well_beads_day1.xlsx` | Day 1 |
-| 96-well plates | `260116_rom_96well_beads_day2.xlsx` | Day 2 |
-| Test tubes | `260122_rom_ttubes_pombe_beads_pub.xlsx` | Morning |
-| Test tubes | `260122_rom_ttubes_2_pombe_beads_pub.xlsx` | Afternoon |
-| 24-well plates | `260122_rom_24plates_pombe_beads_pub.xlsx` | Morning |
-| 24-well plates | `260122_rom_24plates_2_pombe_beads_pub.xlsx` | Afternoon |
-| Supplements | `260123_rom_supplements_pombe_beads_pub.xlsx` | Morning |
-| Supplements | `260123_rom_supplements_2_pombe_beads_pub.xlsx` | Afternoon |
+### Experimental Microscopy Data
+
+For more information, see the [microscopy data README](data/microscopy/README.md).
+
 
 ### TODO:
 
-1. Is the processed microscopy data (or at least the output CSV files) being uploaded to Zenodo? (then people wouldn't have to process the microscopy data themselves).
-2. Update section below accordingly.
-3. Add modal script and example notebook.
-4. Map JOBS run to script
-5. Add compute specs (Macbook + Modal GPU info)
+- [ ] Is the processed microscopy data (or at least the output CSV files) being uploaded to Zenodo? (then people wouldn't have to process the microscopy data themselves).
+  - [ ] Update section below accordingly
+- [ ] Map JOBS run to script
 
 
 ### Reproducing Figures
@@ -80,7 +76,9 @@ Each file in `data/experimental/` contains the raw wellscan ABS data, the conver
 
 ### Compute Specifications
 
+All scripts, except for `segment_cells.py`, were executed on a MacBook Pro with an M3 chip, running macOS Tahoe 26.3.1, and equipped with 36 GB of RAM.
 
+The `segment_cells.py` script was executed via [Modal](https://modal.com) using NVIDIA T4 GPUs on a minimal Debian environment. The setup leveraged up to 10 concurrent containers and mounted an S3 bucket to access the high-throughput microscopy data.
 
 ## Contributors
 
