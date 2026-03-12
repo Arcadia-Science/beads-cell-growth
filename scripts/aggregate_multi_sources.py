@@ -9,9 +9,9 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 # PROCESSED_DIR = REPO_ROOT / "data" / "processed"
 PROCESSED_DIR = Path("/Users/ryanlane/arc_nas_mirror/Hina/Roman/")
 PROCESSED_CSV_DIRS = {
-    "96-well": PROCESSED_DIR / "2026-01-16" / "20260116_094944_372",
-    "24-well": PROCESSED_DIR / "2026-01-22" / "20260122_113404_129",
-    "ttubes": PROCESSED_DIR / "2026-01-22" / "20260122_111821_521",
+    "96-well": PROCESSED_DIR / "2026-01-16" / "20260116_094944_372" / "processed/",
+    "24-well": PROCESSED_DIR / "2026-01-22" / "20260122_113404_129" / "processed/",
+    "ttubes": PROCESSED_DIR / "2026-01-22" / "20260122_111821_521" / "processed/",
 }
 OD_PATH = REPO_ROOT / "data" / "Baseline_ODs_stdev.csv"
 OUTPUT_CSV = REPO_ROOT / "data" / "aggregated_summary.csv"
