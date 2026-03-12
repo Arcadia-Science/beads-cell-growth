@@ -5,15 +5,12 @@ import pandas as pd
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
-# UPDATE THIS TO THE CORRECT PATH TO THE PROCESSED DATA
-# PROCESSED_DIR = REPO_ROOT / "data" / "processed"
-PROCESSED_DIR = Path("/Users/ryanlane/arc_nas_mirror/Hina/Roman/")
-PROCESSED_CSV_DIRS = {
-    "96-well": PROCESSED_DIR / "2026-01-16" / "20260116_094944_372" / "processed/",
-    "24-well": PROCESSED_DIR / "2026-01-22" / "20260122_113404_129" / "processed/",
-    "ttubes": PROCESSED_DIR / "2026-01-22" / "20260122_111821_521" / "processed/",
+PROCESSED_CSV_PATHS = {
+    "96-well": REPO_ROOT / "data" / "microscopy" / "summary_stats_96well.csv",
+    "24-well": REPO_ROOT / "data" / "microscopy" / "summary_stats_24well.csv",
+    "ttubes": REPO_ROOT / "data" / "microscopy" / "summary_stats_ttubes.csv",
 }
-OD_PATH = REPO_ROOT / "data" / "Baseline_ODs_stdev.csv"
+OD_PATH = REPO_ROOT / "data" / "plate-reader" / "Baseline_ODs_stdev.csv"
 OUTPUT_CSV = REPO_ROOT / "data" / "aggregated_summary.csv"
 
 
@@ -89,52 +86,52 @@ def plot_facets(summary_csv, output_png):
 def main():
     """Aggregate microscopy data from multiple sources into a single CSV file."""
     dfs = []
-    for experiment, folder_path in PROCESSED_CSV_DIRS.items():
-        if not folder_path.exists():
-            print(f"Warning: {folder_path} not found, skipping.")
+    for experiment, csv_path in PROCESSED_CSV_PATHS.items():
+        if not csv_path.exists():
+            print(f"Warning: {csv_path} not found, skipping.")
             continue
-        for csv_file in folder_path.glob("*.csv"):
-            df = pd.read_csv(csv_file)
-            df["experiment"] = experiment
-            if experiment == "96-well":
-                if "treatment" in df.columns:
-                    t = df["treatment"].astype(str).str.lower()
-                    df["bead_present"] = t.apply(lambda x: True if "4.5 mm bead" in x else False)
-                elif "bead_present" in df.columns:
-                    df["bead_present"] = (
-                        df["bead_present"]
-                        .astype(str)
-                        .str.lower()
-                        .map(
-                            {
-                                "no": False,
-                                "1": True,
-                                "yes": True,
-                                "true": True,
-                                "false": False,
-                                "0": False,
-                            }
-                        )
+
+        df = pd.read_csv(csv_path)
+        df["experiment"] = experiment
+        if experiment == "96-well":
+            if "treatment" in df.columns:
+                t = df["treatment"].astype(str).str.lower()
+                df["bead_present"] = t.apply(lambda x: True if "4.5 mm bead" in x else False)
+            elif "bead_present" in df.columns:
+                df["bead_present"] = (
+                    df["bead_present"]
+                    .astype(str)
+                    .str.lower()
+                    .map(
+                        {
+                            "no": False,
+                            "1": True,
+                            "yes": True,
+                            "true": True,
+                            "false": False,
+                            "0": False,
+                        }
                     )
-                df["volume_ml"] = 1.0
-            else:
-                if "bead_present" in df.columns:
-                    df["bead_present"] = (
-                        df["bead_present"]
-                        .astype(str)
-                        .str.lower()
-                        .map(
-                            {
-                                "no": False,
-                                "1": True,
-                                "yes": True,
-                                "true": True,
-                                "false": False,
-                                "0": False,
-                            }
-                        )
+                )
+            df["volume_ml"] = 1.0
+        else:
+            if "bead_present" in df.columns:
+                df["bead_present"] = (
+                    df["bead_present"]
+                    .astype(str)
+                    .str.lower()
+                    .map(
+                        {
+                            "no": False,
+                            "1": True,
+                            "yes": True,
+                            "true": True,
+                            "false": False,
+                            "0": False,
+                        }
                     )
-            dfs.append(df)
+                )
+        dfs.append(df)
     if not dfs:
         print("No CSV files found in input folders.")
         return
