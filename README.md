@@ -68,11 +68,6 @@ For more information, see the [plate reader data README](data/plate-reader/READM
 For more information, see the [microscopy data README](data/microscopy/README.md).
 
 
-### TODO:
-
-- [ ] Is the processed microscopy data (or at least the output CSV files) being uploaded to Zenodo? (then people wouldn't have to process the microscopy data themselves).
-  - [ ] Update section below accordingly
-
 
 ### Reproducing Figures
 
