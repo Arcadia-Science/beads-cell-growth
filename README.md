@@ -51,6 +51,13 @@ OD heatmaps for Figures 2–4 are generated from `Baseline_ODs.csv` and `Supplem
 
 OD line plots for Figures 5–6 are generated from `Baseline_ODs_stdev.csv` by `aggregate_multi_sources.py`. `Baseline_ODs_stdev.csv` contains the same measurements as `Baseline_ODs.csv`, but reformatted so that each row represents a unique experiment/strain/bead/volume combination, and it additionally includes standard deviation columns for each measurement.
 
+Cell length and area measurements for Figures 2–7 are compiled by aggregating CSV files containing processed microscopy data produced by `segment_cells.py`. Each experiment has its own dedicated folder:
+
+- Test tubes: `20260122_111821_521`
+- 24-well plates: `20260122_113404_129`
+- 96-well plates: `20260116_094944_372`
+- Supplements: `20260123_113447_096`
+
 
 ### Experimental OD Data
 
@@ -65,7 +72,6 @@ For more information, see the [microscopy data README](data/microscopy/README.md
 
 - [ ] Is the processed microscopy data (or at least the output CSV files) being uploaded to Zenodo? (then people wouldn't have to process the microscopy data themselves).
   - [ ] Update section below accordingly
-- [ ] Map JOBS run to script
 
 
 ### Reproducing Figures
