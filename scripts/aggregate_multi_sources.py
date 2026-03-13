@@ -13,6 +13,11 @@ PROCESSED_CSV_PATHS = {
 OD_PATH = REPO_ROOT / "data" / "plate-reader" / "Baseline_ODs_stdev.csv"
 OUTPUT_CSV = REPO_ROOT / "data" / "aggregated_summary.csv"
 
+STRAIN_FIG_DIRS = {
+    "SP286": REPO_ROOT / "figures" / "figure-5",
+    "dea2^": REPO_ROOT / "figures" / "figure-6",
+}
+
 
 def summarize(df: pd.DataFrame) -> pd.DataFrame:
     df2 = df.dropna(subset=["volume_ml"]).copy()
@@ -34,8 +39,7 @@ def summarize(df: pd.DataFrame) -> pd.DataFrame:
     return out
 
 
-def plot_facets(summary_csv, output_png):
-
+def plot_facets(summary_csv: str, strain_fig_dirs: dict[str, Path]) -> None:
     df = pd.read_csv(summary_csv)
     df["volume_ml"] = pd.to_numeric(df["volume_ml"], errors="coerce")
     df["bead_present"] = df["bead_present"].astype(bool)
@@ -51,6 +55,12 @@ def plot_facets(summary_csv, output_png):
         ("OD_afternoon_mean", "OD afternoon", "OD_afternoon_stdev"),
     ]
     for strain in strains:
+        fig_dir = strain_fig_dirs.get(strain)
+        if fig_dir is None:
+            print(f"No output directory configured for strain {strain}, skipping plot.")
+            continue
+        fig_dir.mkdir(parents=True, exist_ok=True)
+
         fig, axes = plt.subplots(2, 2, figsize=(14, 8))
         df_strain = df[df["strain"] == strain]
         for idx, (mean_col, title, stdev_col) in enumerate(facets):
@@ -78,9 +88,10 @@ def plot_facets(summary_csv, output_png):
         fig.legend(handles, labels, loc="upper right")
         fig.suptitle(f"Strain: {strain}")
         fig.tight_layout()
-        out_png = output_png.replace(".png", f"_{strain}.png")
+        out_png = fig_dir / f"aggregated_summary_{strain}.png"
         plt.savefig(out_png)
         plt.close(fig)
+        print(f"Saved: {out_png}")
 
 
 def main():
@@ -154,8 +165,7 @@ def main():
     summary = summary.merge(od_df, on=merge_keys, how="left")
     summary.to_csv(OUTPUT_CSV, index=False)
     print(f"Summary merged with OD data and exported to {OUTPUT_CSV}")
-    output_png = str(OUTPUT_CSV).replace(".csv", ".png")
-    plot_facets(str(OUTPUT_CSV), output_png)
+    plot_facets(str(OUTPUT_CSV), STRAIN_FIG_DIRS)
 
 
 if __name__ == "__main__":
