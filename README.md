@@ -28,9 +28,9 @@ uv sync --all-extras
 | `scripts/` | Python scripts for plotting and statistical analysis |
 | `data/microscopy/` | Example ND2 microscopy images of *S. pombe* cells |
 | `data/plate-reader/` | Per-experiment XLSX files containing raw ABS and processed OD measurements |
-| `data/Baseline_ODs.csv` | Manually labelled and aggregated OD data for baseline experiments (test tubes, 24-well, 96-well) |
-| `data/Supplement_ODs.csv` | Manually labelled and aggregated OD data for supplement experiments |
-| `data/Baseline_ODs_stdev.csv` | Reformatted version of `Baseline_ODs.csv` that also includes standard deviations |
+| `data/plate-reader/Baseline_ODs.csv` | Manually labelled and aggregated OD data for baseline experiments (test tubes, 24-well, 96-well) |
+| `data/plate-reader/Supplement_ODs.csv` | Manually labelled and aggregated OD data for supplement experiments |
+| `data/plate-reader/Baseline_ODs_stdev.csv` | Reformatted version of `Baseline_ODs.csv` that also includes standard deviations |
 
 
 ### Mapping Experiments and Figures to Scripts and Input Data Sources
