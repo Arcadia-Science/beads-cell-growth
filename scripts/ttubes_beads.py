@@ -424,7 +424,7 @@ def main(argv: list[str] | None = None) -> int:
         print("No data after mapping wells to strain/treatment. Check filenames + mapping rules.")
         return 0
 
-    csv_out = REPO_ROOT / "data" / "microscopy" / "summary_stats_ttubes.csv"
+    csv_out = REPO_ROOT / "data" / "microscopy" / "combined_dic_measurements_ttubes.csv"
     csv_out.parent.mkdir(parents=True, exist_ok=True)
     df.to_csv(csv_out, index=False)
     print(f"Saved combined data: {csv_out}")

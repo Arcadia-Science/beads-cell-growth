@@ -6,9 +6,9 @@ import pandas as pd
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
 PROCESSED_CSV_PATHS = {
-    "96-well": REPO_ROOT / "data" / "microscopy" / "summary_stats_96well.csv",
-    "24-well": REPO_ROOT / "data" / "microscopy" / "summary_stats_24well.csv",
-    "ttubes": REPO_ROOT / "data" / "microscopy" / "summary_stats_ttubes.csv",
+    "96-well": REPO_ROOT / "data" / "microscopy" / "combined_dic_measurements_96well.csv",
+    "24-well": REPO_ROOT / "data" / "microscopy" / "combined_dic_measurements_24well.csv",
+    "ttubes": REPO_ROOT / "data" / "microscopy" / "combined_dic_measurements_ttubes.csv",
 }
 OD_PATH = REPO_ROOT / "data" / "plate-reader" / "Baseline_ODs_stdev.csv"
 OUTPUT_CSV = REPO_ROOT / "data" / "aggregated_summary.csv"
