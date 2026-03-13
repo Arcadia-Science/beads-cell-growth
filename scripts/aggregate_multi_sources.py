@@ -97,6 +97,7 @@ def main():
             if "treatment" in df.columns:
                 t = df["treatment"].astype(str).str.lower()
                 df["bead_present"] = t.apply(lambda x: True if "4.5 mm bead" in x else False)
+                df = df[t.isin(["no bead", "4.5 mm bead"])]
             elif "bead_present" in df.columns:
                 df["bead_present"] = (
                     df["bead_present"]
