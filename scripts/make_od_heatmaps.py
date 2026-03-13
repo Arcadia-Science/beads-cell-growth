@@ -30,7 +30,7 @@ plt.rcParams["font.size"] = ap.style_defaults.BASE_FONT_SIZE
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = REPO_ROOT / "data" / "plate-reader"
-OUT_DIR = DATA_DIR / "heatmaps"
+OUT_DIR = REPO_ROOT / "figures" / "heatmaps"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
 FILES = ["Supplement_ODs.csv", "Baseline_ODs.csv"]
