@@ -1,10 +1,10 @@
-"""Create OD heatmaps from Excel files in Data/.
+"""Create OD heatmaps from plate-reader CSV files in data/
 
-For each of the two Excel files ("Baseline_ODs.xlsx" and "Supplement_ODs.xlsx") this
+For each of the two CSV files ("Baseline_ODs.csv" and "Supplement_ODs.csv") this
 script builds a grid of small heatmaps facetted by Experiment (rows) and
 genotype (columns). Each small heatmap has two rows: morning (row 0) and
 afternoon (row 1). Columns are ordered in the same sequence as they appear in
-the Excel sheet for that Experiment+genotype (samples are grouped by the other
+the CSV for that Experiment+genotype (samples are grouped by the other
 sample-identifying columns).
 
 Color map: 'magma' (matplotlib). Outputs saved to Data_analysis/heatmaps.
@@ -28,15 +28,16 @@ plt.rcParams["savefig.transparent"] = False
 plt.rcParams["image.cmap"] = "magma"
 plt.rcParams["font.size"] = ap.style_defaults.BASE_FONT_SIZE
 
-DATA_DIR = Path("data")
-OUT_DIR = DATA_DIR / "heatmaps"
+REPO_ROOT = Path(__file__).resolve().parent.parent
+DATA_DIR = REPO_ROOT / "data" / "plate-reader"
+OUT_DIR = REPO_ROOT / "figures" / "heatmaps"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
-FILES = ["Supplement_ODs.xlsx", "Baseline_ODs.xlsx"]
+FILES = ["Supplement_ODs.csv", "Baseline_ODs.csv"]
 
 
 def _read_first_sheet(path: Path) -> pd.DataFrame:
-    return pd.read_excel(path, sheet_name=0)
+    return pd.read_csv(path)
 
 
 def _ordered_unique(seq):

@@ -10,6 +10,8 @@ import seaborn as sns
 from scipy import stats
 from statsmodels.stats.multitest import multipletests
 
+REPO_ROOT = Path(__file__).resolve().parent.parent
+
 WELL_RE = re.compile(r"^Well([A-Z])(\d{2})")
 
 # Strain order remains the two strains used in these experiments
@@ -272,8 +274,8 @@ def violin_grouped_with_means(df: pd.DataFrame, y: str, title: str, outpath: Pat
             + (sd_val if sd_val > 0 else 0.0)
             + max(ann_offset * 0.6, (sd_val if sd_val > 0 else mu * 0.03))
         )
-        # Skip showing 'ns' on the NO bead (control) bars to reduce clutter
-        if sig_label and not (str(treatment) == "NO bead" and sig_label == "ns"):
+        # Skip showing 'ns' on the NONE (control) bars to reduce clutter
+        if sig_label and not (str(treatment) == "NONE" and sig_label == "ns"):
             ax.text(
                 x,
                 sig_y,
@@ -445,15 +447,6 @@ def build_combined_dataframe(csv_paths: list[Path]) -> pd.DataFrame:
 
     # Expose a canonical 'length' column (alias for axis_major_length)
     out["length"] = out["axis_major_length"]
-    # derive structured metadata from the treatment string: numeric volume and bead presence
-    # treatment strings are like '1 mL no bead' or '3 mL bead' so extract leading number
-    vol_match = out["treatment"].str.extract(r"^(\d+)")
-    out["volume_ml"] = pd.to_numeric(vol_match[0], errors="coerce")
-    # map volumes 1..5 to group letters a..e
-    out["volume_group"] = out["volume_ml"].apply(
-        lambda v: chr(96 + int(v)) if not pd.isna(v) and 1 <= int(v) <= 26 else pd.NA
-    )
-    out["bead_present"] = out["treatment"].str.contains(r"\\bbead\\b")
 
     out["strain"] = pd.Categorical(out["strain"], categories=STRAIN_ORDER, ordered=True)
     out["treatment"] = pd.Categorical(out["treatment"], categories=TREATMENT_ORDER, ordered=True)
@@ -471,17 +464,9 @@ def main(argv: list[str] | None = None) -> int:
         default=Path.cwd() / "processed",
         help="Path to directory containing processed CSV files",
     )
-    parser.add_argument(
-        "--out-dir",
-        "-o",
-        type=Path,
-        default=None,
-        help="Output directory (default: processed-dir)",
-    )
     args = parser.parse_args(argv)
 
     processed = args.processed_dir
-    out_dir = args.out_dir or processed
 
     if not processed.exists() or not processed.is_dir():
         print(f"Processed directory not found: {processed}")
@@ -497,23 +482,26 @@ def main(argv: list[str] | None = None) -> int:
         print("No data after mapping wells to strain/treatment. Check filenames + mapping rules.")
         return 0
 
-    combined_path = out_dir / "combined_dic_measurements.csv"
-    out_dir.mkdir(parents=True, exist_ok=True)
-    df.to_csv(combined_path, index=False)
-    print(f"Saved combined data: {combined_path}")
+    csv_out = REPO_ROOT / "data" / "microscopy" / "combined_dic_measurements_supplements.csv"
+    csv_out.parent.mkdir(parents=True, exist_ok=True)
+    df.to_csv(csv_out, index=False)
+    print(f"Saved combined data: {csv_out}")
+
+    fig_dir = REPO_ROOT / "figures" / "figure-7"
+    fig_dir.mkdir(parents=True, exist_ok=True)
 
     violin_grouped_with_means(
         df,
         y="length",
         title="DIC length (µm) by strain and bead treatment (means labeled)",
-        outpath=out_dir / "bar_length_grouped.svg",
+        outpath=fig_dir / "bar_length_grouped.svg",
     )
 
     violin_grouped_with_means(
         df,
         y="area",
         title="DIC area (µm²) by strain and bead treatment (means labeled)",
-        outpath=out_dir / "bar_area_grouped.svg",
+        outpath=fig_dir / "bar_area_grouped.svg",
     )
 
     print("Done.")

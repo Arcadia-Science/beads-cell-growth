@@ -11,6 +11,8 @@ import seaborn as sns
 from scipy import stats
 from statsmodels.stats.multitest import multipletests
 
+REPO_ROOT = Path(__file__).resolve().parent.parent
+
 WELL_RE = re.compile(r"^Well([A-Z])(\d{2})")
 
 # When set in `main`, RUN_ID contains the processed folder name so mapping
@@ -423,17 +425,9 @@ def main(argv: list[str] | None = None) -> int:
         default=Path.cwd() / "processed",
         help="Path to directory containing processed CSV files",
     )
-    parser.add_argument(
-        "--out-dir",
-        "-o",
-        type=Path,
-        default=None,
-        help="Output directory (default: processed-dir)",
-    )
     args = parser.parse_args(argv)
 
     processed = args.processed_dir
-    out_dir = args.out_dir or processed
 
     # expose the processed folder name to mapping functions for run-specific
     # adjustments (see RUN_ID usage above)
@@ -454,23 +448,26 @@ def main(argv: list[str] | None = None) -> int:
         print("No data after mapping wells to strain/treatment. Check filenames + mapping rules.")
         return 0
 
-    combined_path = out_dir / "combined_dic_measurements.csv"
-    out_dir.mkdir(parents=True, exist_ok=True)
-    df.to_csv(combined_path, index=False)
-    print(f"Saved combined data: {combined_path}")
+    csv_out = REPO_ROOT / "data" / "microscopy" / "combined_dic_measurements_96well.csv"
+    csv_out.parent.mkdir(parents=True, exist_ok=True)
+    df.to_csv(csv_out, index=False)
+    print(f"Saved combined data: {csv_out}")
+
+    fig_dir = REPO_ROOT / "figures" / "figure-4"
+    fig_dir.mkdir(parents=True, exist_ok=True)
 
     violin_grouped_with_means(
         df,
         y="length",
         title="DIC length (µm) by strain and bead treatment (means labeled)",
-        outpath=out_dir / "bar_length_grouped.svg",
+        outpath=fig_dir / "bar_length_grouped.svg",
     )
 
     violin_grouped_with_means(
         df,
         y="area",
         title="DIC area (µm²) by strain and bead treatment (means labeled)",
-        outpath=out_dir / "bar_area_grouped.svg",
+        outpath=fig_dir / "bar_area_grouped.svg",
     )
 
     print("Done.")
