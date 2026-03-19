@@ -35,7 +35,7 @@ uv sync --all-extras
 
 ### Mapping Experiments and Figures to Scripts and Input Data Sources
 
-Each microscopy script reads CSV files containing single-cell morphology measurements. These CSVs are produced by processing microscopy images with `scripts/segment_cells.py`, which uses Cellpose for cell segmentation. There is one CSV per field of view, and multiple fields of view per well. The scripts aggregate all CSVs for each well, map well positions to corresponding strains and treatments, compute descriptive statistics, perform pairwise comparisons (using Welch's t-test with Holm correction), and generate the figures included in the publication.
+Each microscopy script reads .CSV files containing single-cell morphology measurements (found in processed microscopy data files). These CSVs are produced by processing microscopy images with `scripts/segment_cells.py`, which uses Cellpose for cell segmentation. There is one CSV per field of view, and multiple fields of view per well. The scripts aggregate all CSVs for each well, map well positions to corresponding strains and treatments, compute descriptive statistics, perform pairwise comparisons (using Welch's t-test with Holm correction), and generate the figures included in the publication.
 
 | Figure | Experiment | Script |
 |---|---|---|
@@ -71,7 +71,7 @@ For more information, see the [microscopy data README](data/microscopy/README.md
 
 ### Reproducing Figures
 
-1. Download microscopy data from [Zenodo](https://zenodo.org/records/18927821).
+1. Download raw and processed microscopy data from [Zenodo](https://zenodo.org/records/18927821).
 2. Process raw images using [arcadia-microscopy-tools](https://github.com/Arcadia-Science/arcadia-microscopy-tools).
 3. Run the corresponding script to generate each figure (see table above).
 
