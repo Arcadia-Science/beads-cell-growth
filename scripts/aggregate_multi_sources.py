@@ -15,7 +15,6 @@ OUTPUT_CSV = REPO_ROOT / "data" / "aggregated_summary.csv"
 
 STRAIN_FIG_DIRS = {
     "SP286": REPO_ROOT / "figures" / "figure-5",
-    "dea2^": REPO_ROOT / "figures" / "figure-6",
 }
 
 
