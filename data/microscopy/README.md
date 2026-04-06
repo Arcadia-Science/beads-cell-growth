@@ -1,8 +1,8 @@
 # Microscopy Data
 
-Four ND2 files, each a single DIC field of view of *S. pombe* cells acquired on a Nikon Ti2-E with a 40x (0.95 NA) air objective. The channel is labeled as FITC in the filenames due to a metadata error during acquisition; the actual modality is DIC.
+Two ND2 files, each a single DIC field of view of *S. pombe* cells acquired on a Nikon Ti2-E with a 40x (0.95 NA) air objective. The channel is labeled as FITC in the filenames due to a metadata error during acquisition; the actual modality is DIC.
 
-These images are a subset from the larger experiment, the data for which is available via [Zenodo](https://zenodo.org/records/18927821). The sample images here comprise two bead conditions (no bead, single 3 mm bead) for the wild type strain (WT/SP286). Each file here is one randomly chosen field of view per condition, selected for use in the example segmentation notebook (`notebooks/segmentation-example.ipynb`).
+These images are a subset from the larger 96-well experiment (`20260116_094944_372`), the data for which is available via [Zenodo](https://zenodo.org/records/18927821). The sample images here comprise two bead conditions (no bead, single 3 mm bead) for the wild type strain (WT/SP286). Each file here is one randomly chosen field of view per condition, selected for use in the example segmentation notebook (`notebooks/segmentation-example.ipynb`).
 
 | File | Strain | Bead condition |
 |------|--------|----------------|
