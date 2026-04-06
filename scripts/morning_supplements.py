@@ -14,8 +14,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 
 WELL_RE = re.compile(r"^Well([A-Z])(\d{2})")
 
-# Strain order remains the two strains used in these experiments
-STRAIN_ORDER = ["dea2^", "SP286"]
+STRAIN_ORDER = ["SP286"]
 
 # Treatments for the supplements experiment are combinations of supplements
 # mapped by well column and row. We enumerate expected labels here so
@@ -188,9 +187,7 @@ def violin_grouped_with_means(df: pd.DataFrame, y: str, title: str, outpath: Pat
     ax.set_title(title)
     ax.set_xlabel("Strain")
     ax.set_xticks(list(x_centers.values()))
-    # Replace caret '^' with Greek delta 'Δ' for display only
-    display_names = [s.replace("^", "Δ") for s in list(x_centers.keys())]
-    ax.set_xticklabels(display_names)
+    ax.set_xticklabels(list(x_centers.keys()))
 
     # Use user-friendly axis labels with units when possible
     if y == "length":
@@ -320,27 +317,22 @@ def parse_well_from_name(name: str) -> tuple[str | None, int | None]:
 def map_strain_and_treatment(letter: str, num: int) -> tuple[str, str]:
     """Map a well (row letter + column number) to (strain, treatment).
 
-    Mapping rules for the supplements experiment (user-specified):
-    - Strain is determined by the column block: columns 1-6 -> dea2^, columns 7-12 -> SP286
-    - Within each 6-column block the treatment is determined by the row letter
-      and the column sub-block (1-3 vs 4-6):
-        columns 1-3 (or 7-9):
+    Mapping rules for the supplements experiment:
+    - Columns 7-12 -> SP286
+    - Within the 6-column block the treatment is determined by the row letter
+      and the column sub-block (7-9 vs 10-12):
+        columns 7-9:
           A -> "NONE", B -> "D", C -> "V", D -> "A"
-        columns 4-6 (or 10-12):
+        columns 10-12:
           A -> "D+A", B -> "V+A", C -> "D+V", D -> "D+V+A"
     The returned `treatment` is a short label like "D+V".
     """
     letter = letter.upper().strip()
 
-    # validate column range for this plate (expect 1..12)
-    if not (1 <= num <= 12):
+    if not (7 <= num <= 12):
         return "unknown", "unknown"
 
-    # strain by column block: 1-6 => dea2^, 7-12 => SP286
-    if 1 <= num <= 6:
-        strain = "dea2^"
-    else:
-        strain = "SP286"
+    strain = "SP286"
 
     # position within the 6-column block (1..6)
     pos = ((num - 1) % 6) + 1

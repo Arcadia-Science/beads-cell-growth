@@ -15,10 +15,9 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 
 WELL_RE = re.compile(r"^Well([A-Z])(\d{2})")
 
-# New strain order and treatment mapping for the 24-bead layout
-# Rows A-C -> dea2^, Rows D-F -> SP286
-# Flip display order so SP286 appears left and dea2^ appears right
-STRAIN_ORDER = ["SP286", "dea2^"]
+# Strain order and treatment mapping for the 24-bead layout
+# Rows D-F -> SP286
+STRAIN_ORDER = ["SP286"]
 
 # Treatments encode media volume (1-5 mL) and presence/absence of bead.
 # Columns 1-5: no bead (volumes 1..5 mL)
@@ -154,9 +153,7 @@ def violin_grouped_with_means(df: pd.DataFrame, y: str, title: str, outpath: Pat
     ax.set_title(title)
     ax.set_xlabel("Strain")
     ax.set_xticks(list(x_centers.values()))
-    # Replace caret '^' with Greek delta 'Δ' for display only
-    display_names = [s.replace("^", "Δ") for s in list(x_centers.keys())]
-    ax.set_xticklabels(display_names)
+    ax.set_xticklabels(list(x_centers.keys()))
 
     # Use user-friendly axis labels with units when possible
     if y == "length":
@@ -292,8 +289,7 @@ def parse_well_from_name(name: str) -> tuple[str | None, int | None]:
 def map_strain_and_treatment(letter: str, num: int) -> tuple[str, str]:
     """Map a well (row letter + column number) to (strain, treatment).
 
-    New layout rules for 24-bead experiment:
-    - Rows A-C -> dea2^
+    Layout rules for 24-bead experiment:
     - Rows D-F -> SP286
     - Columns 1..5: no bead; columns 6..10: bead
     - Volume (1-5 mL) is determined by the column within its group:
@@ -301,10 +297,7 @@ def map_strain_and_treatment(letter: str, num: int) -> tuple[str, str]:
     The returned `treatment` is a human-readable label: e.g. "1 mL no bead" or "3 mL bead".
     """
     letter = letter.upper().strip()
-    # strain by row letter
-    if letter in {"A", "B", "C"}:
-        strain = "dea2^"
-    elif letter in {"D", "E", "F"}:
+    if letter in {"D", "E", "F"}:
         strain = "SP286"
     else:
         return "unknown", "unknown"

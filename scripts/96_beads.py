@@ -15,14 +15,9 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 
 WELL_RE = re.compile(r"^Well([A-Z])(\d{2})")
 
-# When set in `main`, RUN_ID contains the processed folder name so mapping
-# functions can apply run-specific fixes (e.g. swap strain labels for a
-# particular run that was plated differently).
-RUN_ID: str | None = None
-
-# New strain order and treatment mapping (column-based bead sizes)
-# Rows A-D -> SP286, Rows E-H -> dea2^
-STRAIN_ORDER = ["SP286", "dea2^"]
+# Strain order and treatment mapping (column-based bead sizes)
+# Rows A-D -> SP286
+STRAIN_ORDER = ["SP286"]
 
 # Order for plotting: show NO bead first (left), then small->large beads
 TREATMENT_ORDER = [
@@ -84,9 +79,7 @@ def violin_grouped_with_means(df: pd.DataFrame, y: str, title: str, outpath: Pat
     ax.set_title(title)
     ax.set_xlabel("Strain")
     ax.set_xticks(list(x_centers.values()))
-    # Replace caret '^' with Greek delta 'Δ' for display only
-    display_names = [s.replace("^", "Δ") for s in list(x_centers.keys())]
-    ax.set_xticklabels(display_names)
+    ax.set_xticklabels(list(x_centers.keys()))
 
     # Use user-friendly axis labels with units when possible
     if y == "length":
@@ -284,7 +277,6 @@ def map_strain_and_treatment(letter: str, num: int) -> tuple[str, str]:
 
     Updated rules (column determines bead size):
     - Rows A-D -> SP286
-    - Rows E-H -> dea2^
     - Cols 1-2  -> 1 mm bead
     - Cols 3-4  -> 1.5 mm bead
     - Cols 5-6  -> 3 mm bead
@@ -293,23 +285,10 @@ def map_strain_and_treatment(letter: str, num: int) -> tuple[str, str]:
     """
     letter = letter.upper().strip()
 
-    # strain by row letter
     if letter in {"A", "B", "C", "D"}:
         strain = "SP286"
-    elif letter in {"E", "F", "G", "H"}:
-        strain = "dea2^"
     else:
         return "unknown", "unknown"
-
-    # Special-case: this particular run was plated with the strain labels
-    # swapped. If we're operating on that run, invert the assigned strain
-    # names so downstream code sees the corrected labels.
-    # (RUN_ID is set in `main`.)
-    if RUN_ID == "20260116_094944_372":
-        if strain == "SP286":
-            strain = "dea2^"
-        elif strain == "dea2^":
-            strain = "SP286"
 
     # columns 1..10 only
     if not (1 <= num <= 10):
@@ -428,11 +407,6 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     processed = args.processed_dir
-
-    # expose the processed folder name to mapping functions for run-specific
-    # adjustments (see RUN_ID usage above)
-    global RUN_ID
-    RUN_ID = processed.name
 
     if not processed.exists() or not processed.is_dir():
         print(f"Processed directory not found: {processed}")

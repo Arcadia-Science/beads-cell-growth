@@ -35,7 +35,7 @@ uv sync --all-extras
 
 ### Mapping Experiments and Figures to Scripts and Input Data Sources
 
-Each microscopy script reads .CSV files containing single-cell morphology measurements (found in processed microscopy data files). These CSVs are produced by processing microscopy images with `scripts/segment_cells.py`, which uses Cellpose for cell segmentation. There is one CSV per field of view, and multiple fields of view per well. The scripts aggregate all CSVs for each well, map well positions to corresponding strains and treatments, compute descriptive statistics, perform pairwise comparisons (using Welch's t-test with Holm correction), and generate the figures included in the publication.
+Each microscopy script reads CSV files containing single-cell morphology measurements (found in processed microscopy data files). These CSVs are produced by processing microscopy images with `scripts/segment_cells.py`, which uses Cellpose for cell segmentation. There is one CSV per field of view, and multiple fields of view per well. The scripts aggregate all CSVs for each well, map well positions to corresponding strains and treatments, compute descriptive statistics, perform pairwise comparisons (using Welch's t-test with Holm correction), and generate the figures included in the publication.
 
 | Figure | Experiment | Script |
 |---|---|---|
@@ -44,14 +44,13 @@ Each microscopy script reads .CSV files containing single-cell morphology measur
 | Figure 3 | 24-well plates | `24_beads.py` |
 | Figure 4 | 96-well plates | `96_beads.py` |
 | Figure 5 | Aggregate WT | `aggregate_multi_sources.py` |
-| Figure 6 | Aggregate mutant | `aggregate_multi_sources.py` |
-| Figure 7 | Supplements | `morning_supplements.py` |
+| Figure 6 | Supplements | `morning_supplements.py` |
 
 OD heatmaps for Figures 2–4 are generated from `Baseline_ODs.csv` and `Supplement_ODs.csv` by `make_od_heatmaps.py`.
 
-OD line plots for Figures 5–6 are generated from `Baseline_ODs_stdev.csv` by `aggregate_multi_sources.py`. `Baseline_ODs_stdev.csv` contains the same measurements as `Baseline_ODs.csv`, but reformatted so that each row represents a unique experiment/strain/bead/volume combination, and it additionally includes standard deviation columns for each measurement.
+OD line plots for Figure 5 are generated from `Baseline_ODs_stdev.csv` by `aggregate_multi_sources.py`. `Baseline_ODs_stdev.csv` contains the same measurements as `Baseline_ODs.csv`, but reformatted so that each row represents a unique experiment/strain/bead/volume combination, and it additionally includes standard deviation columns for each measurement.
 
-Cell length and area measurements for Figures 2–7 are compiled by aggregating CSV files containing processed microscopy data produced by `segment_cells.py`. Each experiment has its own dedicated folder:
+Cell length and area measurements for Figures 2–6 are compiled by aggregating CSV files containing processed microscopy data produced by `segment_cells.py`. All analysis is restricted to the wild type strain (SP286). Each experiment has its own dedicated folder, corresponding to processed microscopy data:
 
 - Test tubes: `20260122_111821_521`
 - 24-well plates: `20260122_113404_129`
