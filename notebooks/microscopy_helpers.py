@@ -153,3 +153,37 @@ def plot_metric_by_volume(df, metric, title, output_path):
     fig.savefig(Path(output_path), bbox_inches="tight", facecolor=apc.parchment)
 
     return fig
+
+
+def plot_metric_cross_experiment(df_agg, metric, output_path):
+    """Line plot of mean `metric` vs. volume across experiments, split by bead presence."""
+    fig, ax = plt.subplots(figsize=(10, 6), facecolor=apc.parchment)
+
+    for (exp, bead), grp in df_agg.groupby(["experiment", "bead_present"]):
+        stats = grp.groupby("volume_ml")[metric].agg(["mean", "std", "count"])
+        stats["ci"] = 1.96 * stats["std"] / np.sqrt(stats["count"])
+        stats = stats.sort_index()
+        label = f"{exp}, {'bead' if bead else 'no bead'}"
+        if len(stats) == 1:
+            ax.errorbar(
+                stats.index, stats["mean"], yerr=stats["ci"],
+                marker="o", capsize=4, label=label,
+            )
+        else:
+            (line,) = ax.plot(stats.index, stats["mean"], marker="o", label=label)
+            ax.fill_between(
+                stats.index,
+                stats["mean"] - stats["ci"],
+                stats["mean"] + stats["ci"],
+                alpha=0.2, color=line.get_color(),
+            )
+
+    ax.legend(bbox_to_anchor=(1.05, 1), loc="upper left")
+    ax.set_xlabel("Volume (mL)")
+    ax.set_ylabel(METRIC_LABELS.get(metric, metric))
+    ax.set_title(f"Mean cell {metric} vs. volume by experiment and bead presence")
+
+    apc.mpl.style_plot(ax)
+    plt.tight_layout()
+    fig.savefig(Path(output_path), bbox_inches="tight", facecolor=apc.parchment)
+    return fig
