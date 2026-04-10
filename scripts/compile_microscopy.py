@@ -1,8 +1,17 @@
 """Compile per-well microscopy CSVs into a single combined table.
 
-Replaces the four experiment-specific scripts (96_beads.py, 24_beads.py,
-ttubes_beads.py, morning_supplements.py) with one CLI that selects the
-plate-layout mapping via --experiment.
+Usage
+-----
+Download processed microscopy data from Zenodo (https://zenodo.org/records/18927821),
+then run once per experiment, pointing ``--processed-dir`` at the ``processed/``
+subfolder for each dataset::
+
+    python scripts/compile_microscopy.py -e 96-well  -d path/to/20260116_094944_372/processed
+    python scripts/compile_microscopy.py -e ttubes   -d path/to/20260122_111821_521/processed
+    python scripts/compile_microscopy.py -e 24-well  -d path/to/20260122_113404_129/processed
+    python scripts/compile_microscopy.py -e supplements -d path/to/20260123_113447_096/processed
+
+Each invocation writes a combined CSV to ``data/microscopy/``.
 """
 
 from __future__ import annotations
@@ -264,18 +273,21 @@ def main(argv: list[str] | None = None) -> int:
     processed: Path = args.processed_dir
 
     if not processed.exists() or not processed.is_dir():
-        print(f"Processed directory not found: {processed}")
-        return 0
+        print(f"Error: processed directory not found: {processed}")
+        return 1
 
     csvs = find_matching_csvs(processed, config.map_well)
     if not csvs:
-        print(f"No matching Well*.csv files found in {processed}")
-        return 0
+        print(f"Error: no matching Well*.csv files found in {processed}")
+        return 1
 
     df = build_combined_dataframe(csvs, config)
     if df.empty:
-        print("No data after mapping wells to strain/treatment. Check filenames + mapping rules.")
-        return 0
+        print(
+            "Error: no data after mapping wells to strain/treatment."
+            " Check filenames + mapping rules."
+        )
+        return 1
 
     config.output_csv.parent.mkdir(parents=True, exist_ok=True)
     df.to_csv(config.output_csv, index=False)
