@@ -47,7 +47,7 @@ All data needed to reproduce figures is included in the repository. Each analysi
 
 OD analysis is performed in `notebooks/od-analysis.ipynb` using `data/plate-reader/od-measurements.csv`.
 
-The cell morphology CSVs in `data/microscopy/` were compiled by `scripts/compile_microscopy_data.py`, which aggregates per-well measurement files produced by `scripts/segment_cells.py` (Cellpose segmentation). Running `compile_microscopy_data.py` is **not required** to reproduce figures — it is included for full reproducibility of the data-compilation step. See its docstring or `make compile-microscopy` for usage. All analysis is restricted to the wild type strain (SP286). Each experiment has its own dedicated folder on [Zenodo](https://zenodo.org/records/18927821):
+The cell morphology CSVs in `data/microscopy/` were compiled by `scripts/compile_microscopy_data.py`, which aggregates per-well measurement files produced by `scripts/segment_cells.py` (Cellpose segmentation). Running `compile_microscopy_data.py` is **not required** to reproduce figures — it is included for full reproducibility of the data-compilation step. See its docstring or `make compile-microscopy-data` for usage. All analysis is restricted to the wild type strain (SP286). Each experiment has its own dedicated folder on [Zenodo](https://zenodo.org/records/18927821):
 
 - Test tubes: `20260122_111821_521`
 - 24-well plates: `20260122_113404_129`
@@ -72,7 +72,7 @@ All data needed to reproduce figures is included in the repository. After clonin
 Optionally, to regenerate the compiled microscopy CSVs from the per-well segmentation outputs:
 
 1. Download processed microscopy data from [Zenodo](https://zenodo.org/records/18927821) into `data/zenodo/`.
-2. Run `make compile-microscopy` (this looks for Zenodo data in `data/zenodo/` by default).
+2. Run `make compile-microscopy-data` (this looks for Zenodo data in `data/zenodo/` by default).
 
 ### Compute Specifications
 

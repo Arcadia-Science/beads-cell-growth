@@ -7,7 +7,7 @@ cloning. It is included for full reproducibility of the data-compilation step.
 Usage
 -----
 Download processed microscopy data from Zenodo (https://zenodo.org/records/18927821)
-into ``data/zenodo/``, then run ``make compile-microscopy`` or invoke per experiment::
+into ``data/zenodo/``, then run ``make compile-microscopy-data`` or invoke per experiment::
 
     python scripts/compile_microscopy_data.py -e 96-well \
         -d data/zenodo/20260116_094944_372/processed

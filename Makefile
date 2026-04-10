@@ -13,8 +13,8 @@ format:
 pre-commit:
 	pre-commit run --all-files
 
-.PHONY: compile-microscopy
-compile-microscopy:
+.PHONY: compile-microscopy-data
+compile-microscopy-data:
 	python scripts/compile_microscopy_data.py -e 96-well -d $(ZENODO_DIR)/20260116_094944_372/processed
 	python scripts/compile_microscopy_data.py -e ttubes -d $(ZENODO_DIR)/20260122_111821_521/processed
 	python scripts/compile_microscopy_data.py -e 24-well -d $(ZENODO_DIR)/20260122_113404_129/processed
