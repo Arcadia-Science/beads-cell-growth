@@ -13,11 +13,11 @@ These images are a subset from the larger 96-well experiment (`20260116_094944_3
 
 Pre-compiled per-cell morphology measurements (axis major length, area, cell length) extracted from DIC microscopy images via the segmentation pipeline (`scripts/segment_cells.py`). These CSVs are committed to the repository so that analysis notebooks can be run without any additional data processing.
 
-Each CSV can optionally be regenerated from per-well segmentation outputs using `scripts/compile_microscopy.py`:
+Each CSV can optionally be regenerated from per-well segmentation outputs using `scripts/compile_microscopy_data.py`:
 
 | File | Producing command |
 |------|------------------|
-| `combined_dic_measurements_96well.csv` | `scripts/compile_microscopy.py -e 96-well` |
-| `combined_dic_measurements_24well.csv` | `scripts/compile_microscopy.py -e 24-well` |
-| `combined_dic_measurements_ttubes.csv` | `scripts/compile_microscopy.py -e ttubes` |
-| `combined_dic_measurements_supplements.csv` | `scripts/compile_microscopy.py -e supplements` |
+| `combined_dic_measurements_96well.csv` | `scripts/compile_microscopy_data.py -e 96-well` |
+| `combined_dic_measurements_24well.csv` | `scripts/compile_microscopy_data.py -e 24-well` |
+| `combined_dic_measurements_ttubes.csv` | `scripts/compile_microscopy_data.py -e ttubes` |
+| `combined_dic_measurements_supplements.csv` | `scripts/compile_microscopy_data.py -e supplements` |
