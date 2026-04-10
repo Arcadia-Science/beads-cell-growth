@@ -31,22 +31,22 @@ uv sync --all-extras
 | `data/plate-reader/od-measurements.csv` | Aggregated OD data across all baseline and supplement experiments |
 
 
-### Mapping Experiments and Figures to Scripts and Input Data Sources
+### Mapping Figures to Analysis Scripts
 
-Each microscopy script reads CSV files containing single-cell morphology measurements (found in processed microscopy data files). These CSVs are produced by processing microscopy images with `scripts/segment_cells.py`, which uses Cellpose for cell segmentation. There is one CSV per field of view, and multiple fields of view per well. The scripts aggregate all CSVs for each well, map well positions to corresponding strains and treatments, compute descriptive statistics, perform pairwise comparisons (using Welch's t-test with Holm correction), and generate the figures included in the publication.
+All data needed to reproduce figures is included in the repository. Each analysis notebook reads pre-compiled CSVs from `data/microscopy/` and `data/plate-reader/` directly.
 
-| Figure | Experiment | Data compilation | Analysis notebook |
-|---|---|---|---|
-| Figure 1 | Experimental setup | - | - |
-| Figure 2 | Test tubes | `compile_microscopy.py -e ttubes` | `microscopy-analysis-ttube-24well.ipynb` |
-| Figure 3 | 24-well plates | `compile_microscopy.py -e 24-well` | `microscopy-analysis-ttube-24well.ipynb` |
-| Figure 4 | 96-well plates | `compile_microscopy.py -e 96-well` | `microscopy-analysis-96-well.ipynb` |
-| Figure 5 | Aggregate WT | - | `aggregate_multi_sources.py` |
-| Figure 6 | Supplements | `compile_microscopy.py -e supplements` | `microscopy-analysis-96-well.ipynb` |
+| Figure | Experiment | Analysis script |
+|---|---|---|
+| Figure 1 | Experimental setup | - |
+| Figure 2 | Test tubes | `notebooks/microscopy-analysis-ttube-24well.ipynb` |
+| Figure 3 | 24-well plates | `notebooks/microscopy-analysis-ttube-24well.ipynb` |
+| Figure 4 | 96-well plates | `notebooks/microscopy-analysis-96-well.ipynb` |
+| Figure 5 | Aggregate WT | `scripts/aggregate_multi_sources.py` |
+| Figure 6 | Supplements | `notebooks/microscopy-analysis-96-well.ipynb` |
 
 OD analysis is performed in `notebooks/od-analysis.ipynb` using `data/plate-reader/od-measurements.csv`.
 
-Cell length and area measurements for Figures 2–6 are compiled by `scripts/compile_microscopy.py`, which aggregates per-well CSV files containing processed microscopy data produced by `segment_cells.py`. All analysis is restricted to the wild type strain (SP286). Each experiment has its own dedicated folder, corresponding to processed microscopy data:
+The cell morphology CSVs in `data/microscopy/` were compiled by `scripts/compile_microscopy.py`, which aggregates per-well measurement files produced by `scripts/segment_cells.py` (Cellpose segmentation). Running `compile_microscopy.py` is **not required** to reproduce figures — it is included for full reproducibility of the data-compilation step. See its docstring or `make compile-microscopy` for usage. All analysis is restricted to the wild type strain (SP286). Each experiment has its own dedicated folder on [Zenodo](https://zenodo.org/records/18927821):
 
 - Test tubes: `20260122_111821_521`
 - 24-well plates: `20260122_113404_129`
@@ -66,13 +66,12 @@ For more information, see the [microscopy data README](data/microscopy/README.md
 
 ### Reproducing Figures
 
-The combined microscopy CSVs (`data/microscopy/combined_dic_measurements_*.csv`) and OD data (`data/plate-reader/od-measurements.csv`) are included in the repository, so the analysis notebooks can be run immediately after cloning and installing.
+All data needed to reproduce figures is included in the repository. After cloning and installing (see above), run the analysis notebooks and scripts listed in the table above.
 
-To regenerate the combined microscopy CSVs from scratch:
+Optionally, to regenerate the compiled microscopy CSVs from the per-well segmentation outputs:
 
 1. Download processed microscopy data from [Zenodo](https://zenodo.org/records/18927821).
-2. Run `compile_microscopy.py` once per experiment (see `make compile-microscopy` or the docstring in `scripts/compile_microscopy.py` for exact commands).
-3. Run the corresponding analysis notebook or script to generate each figure (see table above).
+2. Run `make compile-microscopy MICROSCOPY_DIR=/path/to/zenodo` (or see the docstring in `scripts/compile_microscopy.py` for per-experiment commands).
 
 ### Compute Specifications
 

@@ -1,5 +1,9 @@
 """Compile per-well microscopy CSVs into a single combined table.
 
+This script is **optional**. The compiled CSVs it produces are already committed
+to ``data/microscopy/``, so the analysis notebooks can be run immediately after
+cloning. It is included for full reproducibility of the data-compilation step.
+
 Usage
 -----
 Download processed microscopy data from Zenodo (https://zenodo.org/records/18927821),
