@@ -39,11 +39,11 @@ All data needed to reproduce figures is included in the repository. Each analysi
 | Figure | Experiment | Analysis script |
 |---|---|---|
 | Figure 1 | Experimental setup | - |
-| Figure 2 | Test tubes | `notebooks/microscopy-analysis-ttube-24well.ipynb` |
-| Figure 3 | 24-well plates | `notebooks/microscopy-analysis-ttube-24well.ipynb` |
-| Figure 4 | 96-well plates | `notebooks/microscopy-analysis-96-well.ipynb` |
+| Figure 2 | Test tubes | `notebooks/microscopy-analysis.ipynb` |
+| Figure 3 | 24-well plates | `notebooks/microscopy-analysis.ipynb` |
+| Figure 4 | 96-well plates | `notebooks/microscopy-analysis.ipynb` |
 | Figure 5 | Aggregate WT | `scripts/aggregate_multi_sources.py` |
-| Figure 6 | Supplements | `notebooks/microscopy-analysis-96-well.ipynb` |
+| Figure 6 | Supplements | `notebooks/microscopy-analysis.ipynb` |
 
 OD analysis is performed in `notebooks/od-analysis.ipynb` using `data/plate-reader/od-measurements.csv`.
 
