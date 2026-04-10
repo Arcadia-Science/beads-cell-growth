@@ -11,11 +11,11 @@ These images are a subset from the larger 96-well experiment (`20260116_094944_3
 
 ## Cell Morphology CSVs
 
-Per-cell morphology measurements (axis major length, area, cell length) extracted from DIC microscopy images via the segmentation pipeline (`scripts/segment_cells.py`). Each CSV corresponds to one experiment type and is produced by a dedicated script in `scripts/`.
+Per-cell morphology measurements (axis major length, area, cell length) extracted from DIC microscopy images via the segmentation pipeline (`scripts/segment_cells.py`). Each CSV corresponds to one experiment type and is produced by `scripts/compile_microscopy.py` with the appropriate `--experiment` flag.
 
-| File | Producing script |
-|------|-----------------|
-| `combined_dic_measurements_96well.csv` | `scripts/96_beads.py` |
-| `combined_dic_measurements_24well.csv` | `scripts/24_beads.py` |
-| `combined_dic_measurements_ttubes.csv` | `scripts/ttubes_beads.py` |
-| `combined_dic_measurements_supplements.csv` | `scripts/morning_supplements.py` |
+| File | Producing command |
+|------|------------------|
+| `combined_dic_measurements_96well.csv` | `scripts/compile_microscopy.py -e 96-well` |
+| `combined_dic_measurements_24well.csv` | `scripts/compile_microscopy.py -e 24-well` |
+| `combined_dic_measurements_ttubes.csv` | `scripts/compile_microscopy.py -e ttubes` |
+| `combined_dic_measurements_supplements.csv` | `scripts/compile_microscopy.py -e supplements` |
