@@ -39,9 +39,13 @@ def correct_pvalues(pvals):
 def plot_metric_by_bead(df, metric, output_path):
     """Bar plot of mean `metric` by bead size with Holm-Bonferroni-corrected t-tests vs. control."""
     bead_values = df["bead_size_mm"].unique()
-    means = df.groupby("bead_size_mm")[metric].mean()
-    stds = df.groupby("bead_size_mm")[metric].std()
-    counts = df.groupby("bead_size_mm")[metric].count()
+
+    # Aggregate to per-image means to avoid pseudoreplication:
+    # cells within the same image are not independent observations.
+    image_means = df.groupby(["bead_size_mm", "source_file"])[metric].mean().reset_index()
+    means = image_means.groupby("bead_size_mm")[metric].mean()
+    stds = image_means.groupby("bead_size_mm")[metric].std()
+    counts = image_means.groupby("bead_size_mm")[metric].count()
     cis = 1.96 * stds / np.sqrt(counts)
 
     x = np.arange(len(means))
@@ -53,11 +57,11 @@ def plot_metric_by_bead(df, metric, output_path):
     ax.set_ylabel(METRIC_LABELS.get(metric, metric))
     ax.set_title(f"Mean cell {metric} by bead treatment (96-well)")
 
-    control_vals = df[df["bead_size_mm"] == 0.0][metric].values
+    control_vals = image_means[image_means["bead_size_mm"] == 0.0][metric].values
     treatment_beads = sorted(b for b in bead_values if b != 0.0)
     raw_pvals = []
     for b in treatment_beads:
-        treat_vals = df[df["bead_size_mm"] == b][metric].values
+        treat_vals = image_means[image_means["bead_size_mm"] == b][metric].values
         if len(control_vals) > 1 and len(treat_vals) > 1:
             _, p = ttest_ind(control_vals, treat_vals, equal_var=False)
         else:
@@ -87,9 +91,14 @@ def plot_metric_by_volume(df, metric, title, output_path):
     volumes = sorted(df["volume_ml"].unique())
     conditions = [False, True]
 
-    means = df.groupby(["volume_ml", "bead_present"])[metric].mean().unstack()
-    stds = df.groupby(["volume_ml", "bead_present"])[metric].std().unstack()
-    counts = df.groupby(["volume_ml", "bead_present"])[metric].count().unstack()
+    # Aggregate to per-image means to avoid pseudoreplication:
+    # cells within the same image are not independent observations.
+    image_means = (
+        df.groupby(["volume_ml", "bead_present", "source_file"])[metric].mean().reset_index()
+    )
+    means = image_means.groupby(["volume_ml", "bead_present"])[metric].mean().unstack()
+    stds = image_means.groupby(["volume_ml", "bead_present"])[metric].std().unstack()
+    counts = image_means.groupby(["volume_ml", "bead_present"])[metric].count().unstack()
     cis = 1.96 * stds / np.sqrt(counts)
 
     x = np.arange(len(volumes))
@@ -115,8 +124,12 @@ def plot_metric_by_volume(df, metric, title, output_path):
 
     raw_pvals = []
     for v in volumes:
-        ctrl = df[(df["volume_ml"] == v) & (~df["bead_present"])][metric].values
-        treat = df[(df["volume_ml"] == v) & (df["bead_present"])][metric].values
+        ctrl = image_means[
+            (image_means["volume_ml"] == v) & (~image_means["bead_present"])
+        ][metric].values
+        treat = image_means[
+            (image_means["volume_ml"] == v) & (image_means["bead_present"])
+        ][metric].values
         if len(ctrl) > 1 and len(treat) > 1:
             _, p = ttest_ind(ctrl, treat, equal_var=False)
         else:
@@ -160,7 +173,10 @@ def plot_metric_cross_experiment(df_agg, metric, output_path):
     fig, ax = plt.subplots(figsize=(10, 6), facecolor=apc.parchment)
 
     for (exp, bead), grp in df_agg.groupby(["experiment", "bead_present"]):
-        stats = grp.groupby("volume_ml")[metric].agg(["mean", "std", "count"])
+        # Aggregate to per-image means to avoid pseudoreplication:
+        # cells within the same image are not independent observations.
+        image_means = grp.groupby(["volume_ml", "source_file"])[metric].mean().reset_index()
+        stats = image_means.groupby("volume_ml")[metric].agg(["mean", "std", "count"])
         stats["ci"] = 1.96 * stats["std"] / np.sqrt(stats["count"])
         stats = stats.sort_index()
         label = f"{exp}, {'bead' if bead else 'no bead'}"
