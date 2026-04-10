@@ -29,6 +29,7 @@ uv sync --all-extras
 | `data/microscopy/` | Example ND2 microscopy images of *S. pombe* cells and per-experiment cell morphology CSVs (`combined_dic_measurements_*.csv`) |
 | `data/plate-reader/` | Per-experiment XLSX files containing raw ABS and processed OD measurements |
 | `data/plate-reader/od-measurements.csv` | Aggregated OD data across all baseline and supplement experiments |
+| `data/zenodo/` | (optional, git-ignored) Download location for processed microscopy data from Zenodo |
 
 
 ### Mapping Figures to Analysis Scripts
@@ -70,8 +71,8 @@ All data needed to reproduce figures is included in the repository. After clonin
 
 Optionally, to regenerate the compiled microscopy CSVs from the per-well segmentation outputs:
 
-1. Download processed microscopy data from [Zenodo](https://zenodo.org/records/18927821).
-2. Run `make compile-microscopy MICROSCOPY_DIR=/path/to/zenodo` (or see the docstring in `scripts/compile_microscopy.py` for per-experiment commands).
+1. Download processed microscopy data from [Zenodo](https://zenodo.org/records/18927821) into `data/zenodo/`.
+2. Run `make compile-microscopy` (this looks for Zenodo data in `data/zenodo/` by default).
 
 ### Compute Specifications
 

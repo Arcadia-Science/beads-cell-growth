@@ -80,6 +80,9 @@ venv/
 # written by setuptools_scm
 **/_version.py
 
+# Zenodo microscopy data (large, downloaded locally)
+data/zenodo/
+
 # Nextflow related folders and files
 .nextflow*
 work/

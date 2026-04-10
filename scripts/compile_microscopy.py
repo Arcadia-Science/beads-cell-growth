@@ -6,14 +6,17 @@ cloning. It is included for full reproducibility of the data-compilation step.
 
 Usage
 -----
-Download processed microscopy data from Zenodo (https://zenodo.org/records/18927821),
-then run once per experiment, pointing ``--processed-dir`` at the ``processed/``
-subfolder for each dataset::
+Download processed microscopy data from Zenodo (https://zenodo.org/records/18927821)
+into ``data/zenodo/``, then run ``make compile-microscopy`` or invoke per experiment::
 
-    python scripts/compile_microscopy.py -e 96-well  -d path/to/20260116_094944_372/processed
-    python scripts/compile_microscopy.py -e ttubes   -d path/to/20260122_111821_521/processed
-    python scripts/compile_microscopy.py -e 24-well  -d path/to/20260122_113404_129/processed
-    python scripts/compile_microscopy.py -e supplements -d path/to/20260123_113447_096/processed
+    python scripts/compile_microscopy.py -e 96-well \
+        -d data/zenodo/20260116_094944_372/processed
+    python scripts/compile_microscopy.py -e ttubes \
+        -d data/zenodo/20260122_111821_521/processed
+    python scripts/compile_microscopy.py -e 24-well \
+        -d data/zenodo/20260122_113404_129/processed
+    python scripts/compile_microscopy.py -e supplements \
+        -d data/zenodo/20260123_113447_096/processed
 
 Each invocation writes a combined CSV to ``data/microscopy/``.
 """
