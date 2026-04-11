@@ -17,7 +17,7 @@ Each CSV can optionally be regenerated from per-well segmentation outputs using 
 
 | File | Producing command |
 |------|------------------|
-| `combined_dic_measurements_96well.csv` | `scripts/compile_microscopy_data.py -e 96-well` |
-| `combined_dic_measurements_24well.csv` | `scripts/compile_microscopy_data.py -e 24-well` |
-| `combined_dic_measurements_ttubes.csv` | `scripts/compile_microscopy_data.py -e ttubes` |
-| `combined_dic_measurements_supplements.csv` | `scripts/compile_microscopy_data.py -e supplements` |
+| `combined_dic_measurements_96well.csv` | `scripts/compile_microscopy_data.py -e 96-well -d data/zenodo/20260116_094944_372/processed` |
+| `combined_dic_measurements_24well.csv` | `scripts/compile_microscopy_data.py -e 24-well -d data/zenodo/20260122_113404_129/processed` |
+| `combined_dic_measurements_ttubes.csv` | `scripts/compile_microscopy_data.py -e ttubes -d data/zenodo/20260122_111821_521/processed` |
+| `combined_dic_measurements_supplements.csv` | `scripts/compile_microscopy_data.py -e supplements -d data/zenodo/20260123_113447_096/processed` |
