@@ -19,4 +19,4 @@ Raw wellscan data from the XLSX files below were converted to OD values, manuall
 
 | File | Description | Columns |
 |------|-------------|---------|
-| `od-measurements.csv` | One row per replicate measurement across all baseline experiments (test tubes, 24-well, 96-well) | `experiment, strain, volume, time, beads, rep, OD` |
+| `od-measurements.csv` | One row per replicate measurement across all experiments (test tubes, 24-well, 96-well, supplements) | `experiment, strain, volume, time, beads, rep, OD, supplement` |
