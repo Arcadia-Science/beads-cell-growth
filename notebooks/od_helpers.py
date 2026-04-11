@@ -66,8 +66,12 @@ def plot_od_by_bead(df, title, output_path):
         if stars:
             bar_idx = list(means.index).index(b)
             ax.text(
-                bar_idx, means[b] + cis[b] + y_offset, stars,
-                ha="center", va="bottom", fontsize=14,
+                bar_idx,
+                means[b] + cis[b] + y_offset,
+                stars,
+                ha="center",
+                va="bottom",
+                fontsize=14,
             )
 
     apc.mpl.style_plot(ax)
@@ -181,8 +185,12 @@ def plot_od_by_supplement(df, title, output_path, supp_order=None):
         if stars:
             bar_idx = supp_order.index(s)
             ax.text(
-                bar_idx, means[s] + cis[s] + y_offset, stars,
-                ha="center", va="bottom", fontsize=14,
+                bar_idx,
+                means[s] + cis[s] + y_offset,
+                stars,
+                ha="center",
+                va="bottom",
+                fontsize=14,
             )
 
     apc.mpl.style_plot(ax)
@@ -202,8 +210,12 @@ def plot_od_cross_experiment(df_agg, output_path=None):
         label = f"{exp}, {'bead' if bead else 'no bead'}"
         if len(stats) == 1:
             ax.errorbar(
-                stats.index, stats["mean"], yerr=stats["ci"],
-                marker="o", capsize=4, label=label,
+                stats.index,
+                stats["mean"],
+                yerr=stats["ci"],
+                marker="o",
+                capsize=4,
+                label=label,
             )
         else:
             (line,) = ax.plot(stats.index, stats["mean"], marker="o", label=label)
@@ -211,7 +223,8 @@ def plot_od_cross_experiment(df_agg, output_path=None):
                 stats.index,
                 stats["mean"] - stats["ci"],
                 stats["mean"] + stats["ci"],
-                alpha=0.2, color=line.get_color(),
+                alpha=0.2,
+                color=line.get_color(),
             )
 
     ax.legend(bbox_to_anchor=(1.05, 1), loc="upper left")
