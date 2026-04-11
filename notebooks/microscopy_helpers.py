@@ -124,12 +124,12 @@ def plot_metric_by_volume(df, metric, title, output_path):
 
     raw_pvals = []
     for v in volumes:
-        ctrl = image_means[
-            (image_means["volume_ml"] == v) & (~image_means["bead_present"])
-        ][metric].values
-        treat = image_means[
-            (image_means["volume_ml"] == v) & (image_means["bead_present"])
-        ][metric].values
+        ctrl = image_means[(image_means["volume_ml"] == v) & (~image_means["bead_present"])][
+            metric
+        ].values
+        treat = image_means[(image_means["volume_ml"] == v) & (image_means["bead_present"])][
+            metric
+        ].values
         if len(ctrl) > 1 and len(treat) > 1:
             _, p = ttest_ind(ctrl, treat, equal_var=False)
         else:
@@ -182,8 +182,12 @@ def plot_metric_cross_experiment(df_agg, metric, output_path):
         label = f"{exp}, {'bead' if bead else 'no bead'}"
         if len(stats) == 1:
             ax.errorbar(
-                stats.index, stats["mean"], yerr=stats["ci"],
-                marker="o", capsize=4, label=label,
+                stats.index,
+                stats["mean"],
+                yerr=stats["ci"],
+                marker="o",
+                capsize=4,
+                label=label,
             )
         else:
             (line,) = ax.plot(stats.index, stats["mean"], marker="o", label=label)
@@ -191,7 +195,8 @@ def plot_metric_cross_experiment(df_agg, metric, output_path):
                 stats.index,
                 stats["mean"] - stats["ci"],
                 stats["mean"] + stats["ci"],
-                alpha=0.2, color=line.get_color(),
+                alpha=0.2,
+                color=line.get_color(),
             )
 
     ax.legend(bbox_to_anchor=(1.05, 1), loc="upper left")
