@@ -15,7 +15,7 @@ cd 2026-bead-growth
 uv venv --python 3.12
 source .venv/bin/activate
 
-uv sync --all-extras
+uv sync
 ```
 
 
@@ -62,7 +62,7 @@ For more information, see the [microscopy data README](data/microscopy/README.md
 
 ### Reproducing Figures
 
-All data needed to reproduce figures is included in the repository. After cloning and installing (see above), run the analysis notebooks and scripts listed in the table above.
+All data needed to reproduce figures is included in the repository. After cloning and installing (see above), run the analysis notebooks and scripts listed in the table above. Running each notebook regenerates the SVG files in `figures/`.
 
 Optionally, to regenerate the compiled microscopy CSVs from the per-well segmentation outputs:
 
