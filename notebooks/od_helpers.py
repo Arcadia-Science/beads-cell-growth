@@ -76,6 +76,7 @@ def plot_od_by_bead(df, title, output_path):
 
     apc.mpl.style_plot(ax)
     plt.tight_layout()
+    Path(output_path).parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(Path(output_path), bbox_inches="tight", facecolor=apc.parchment)
     return fig
 
@@ -144,6 +145,7 @@ def plot_od_by_volume(df, title, output_path):
 
     apc.mpl.style_plot(ax)
     plt.tight_layout()
+    Path(output_path).parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(Path(output_path), bbox_inches="tight", facecolor=apc.parchment)
     return fig
 
@@ -195,6 +197,7 @@ def plot_od_by_supplement(df, title, output_path, supp_order=None):
 
     apc.mpl.style_plot(ax)
     plt.tight_layout()
+    Path(output_path).parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(Path(output_path), bbox_inches="tight", facecolor=apc.parchment)
     return fig
 
@@ -235,5 +238,6 @@ def plot_od_cross_experiment(df_agg, output_path=None):
     apc.mpl.style_plot(ax)
     plt.tight_layout()
     if output_path is not None:
-        fig.savefig(Path(output_path), bbox_inches="tight", facecolor=apc.parchment)
+        Path(output_path).parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(Path(output_path), bbox_inches="tight", facecolor=apc.parchment)
     return fig
