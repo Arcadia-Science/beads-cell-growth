@@ -13,6 +13,8 @@ METRIC_LABELS = {
 
 BEAD_LABELS = {False: "no bead", True: "bead"}
 
+TREATMENT_ORDER = ["NONE", "D", "V", "A", "D+A", "V+A", "D+V", "D+V+A"]
+
 
 def pval_to_stars(p):
     if p < 0.001:
@@ -81,6 +83,7 @@ def plot_metric_by_bead(df, metric, output_path):
     ax.set_ylim(bottom=0, top=(means + cis).max() + y_offset * 6)
     apc.mpl.style_plot(ax)
     plt.tight_layout()
+    Path(output_path).parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(Path(output_path), bbox_inches="tight", facecolor=apc.parchment)
     return fig
 
@@ -163,8 +166,65 @@ def plot_metric_by_volume(df, metric, title, output_path):
     apc.mpl.style_plot(ax)
     plt.tight_layout()
 
+    Path(output_path).parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(Path(output_path), bbox_inches="tight", facecolor=apc.parchment)
 
+    return fig
+
+
+def plot_metric_by_supplement(df, metric, title, output_path, treatment_order=None):
+    """Bar plot of mean `metric` by supplement treatment with
+    Holm-Bonferroni-corrected Welch's t-tests vs. unsupplemented control."""
+    if treatment_order is None:
+        treatment_order = TREATMENT_ORDER
+
+    # Aggregate to per-image means to avoid pseudoreplication.
+    image_means = df.groupby(["treatment", "source_file"])[metric].mean().reset_index()
+    means = image_means.groupby("treatment")[metric].mean().reindex(treatment_order)
+    stds = image_means.groupby("treatment")[metric].std().reindex(treatment_order)
+    counts = image_means.groupby("treatment")[metric].count().reindex(treatment_order)
+    cis = 1.96 * stds / np.sqrt(counts)
+
+    x = np.arange(len(treatment_order))
+    fig, ax = plt.subplots(figsize=(10, 6), facecolor=apc.parchment)
+    ax.bar(x, means, yerr=cis, capsize=6)
+    ax.set_xticks(x)
+    ax.set_xticklabels(treatment_order, rotation=45, ha="right")
+    ax.set_xlabel("Supplement")
+    ax.set_ylabel(METRIC_LABELS.get(metric, metric))
+    ax.set_title(f"Mean cell {metric} by supplement ({title})")
+
+    control_vals = image_means[image_means["treatment"] == "NONE"][metric].values
+    treatment_supps = [s for s in treatment_order if s != "NONE"]
+    raw_pvals = []
+    for s in treatment_supps:
+        treat_vals = image_means[image_means["treatment"] == s][metric].values
+        if len(control_vals) > 1 and len(treat_vals) > 1:
+            _, p = ttest_ind(control_vals, treat_vals, equal_var=False)
+        else:
+            p = np.nan
+        raw_pvals.append(p)
+
+    adj_pvals = correct_pvalues(raw_pvals)
+    y_offset = means.max() * 0.05
+    for s, adj_p in zip(treatment_supps, adj_pvals, strict=True):
+        stars = pval_to_stars(adj_p)
+        if stars:
+            bar_idx = treatment_order.index(s)
+            ax.text(
+                bar_idx,
+                means[s] + cis[s] + y_offset,
+                stars,
+                ha="center",
+                va="bottom",
+                fontsize=14,
+            )
+
+    ax.set_ylim(bottom=0, top=(means + cis).max() + y_offset * 6)
+    apc.mpl.style_plot(ax)
+    plt.tight_layout()
+    Path(output_path).parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(Path(output_path), bbox_inches="tight", facecolor=apc.parchment)
     return fig
 
 
@@ -206,5 +266,6 @@ def plot_metric_cross_experiment(df_agg, metric, output_path):
 
     apc.mpl.style_plot(ax)
     plt.tight_layout()
+    Path(output_path).parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(Path(output_path), bbox_inches="tight", facecolor=apc.parchment)
     return fig
