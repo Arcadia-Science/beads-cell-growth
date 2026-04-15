@@ -64,7 +64,7 @@ For more information, see the [microscopy data README](data/microscopy/README.md
 
 Sedimentation images are not directly reproducible, since they are pictures taken of the bottom of wells grown with wild-type yeast. Pictures inculde representatives from different culture treatments in 96-well, 24-well, and test tube experiments.
 
-All data needed to reproduce figures is included in the repository. After cloning and installing (see above), run the analysis notebooks and scripts listed in the table above. Running each notebook regenerates the SVG files in `figures/`.
+All data needed to reproduce the other figures is included in the repository. After cloning and installing (see above), run the analysis notebooks and scripts listed in the table above. Running each notebook regenerates the SVG files in `figures/`.
 
 Optionally, to regenerate the compiled microscopy CSVs from the per-well segmentation outputs:
 
