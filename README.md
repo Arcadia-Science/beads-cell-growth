@@ -1,4 +1,4 @@
-# 2026-bead-growth
+# beads-cell-growth
 
 ## Purpose
 
@@ -9,8 +9,8 @@ This repository contains the plotting and statistical analysis scripts used to g
 This repository uses [uv](https://docs.astral.sh/uv/getting-started/installation/) to manage software environments and installations. Run the following commands to create the development environment:
 
 ```bash
-git clone https://github.com/Arcadia-Science/2026-bead-growth.git
-cd 2026-bead-growth
+git clone https://github.com/Arcadia-Science/beads-cell-growth.git
+cd beads-cell-growth
 
 uv venv --python 3.12
 source .venv/bin/activate
