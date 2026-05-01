@@ -1,5 +1,5 @@
 [project]
-name = "2026-bead-growth"
+name = "beads-cell-growth"
 description = "Analysis code and data for 'Adding a single glass bead to liquid cultures improves cell culture quality.'"
 version = "0.1"
 readme = "README.md"
