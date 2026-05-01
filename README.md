@@ -67,12 +67,21 @@ Note that the sedimentation figure is included for visualization purposes only a
 
 Optionally, to regenerate the compiled microscopy CSVs from the per-well segmentation outputs:
 
-1. Download processed microscopy data from [Zenodo](https://zenodo.org/records/18927821) into `data/zenodo/`.
+1. Download processed microscopy data from [Zenodo](https://zenodo.org/records/18927821) into `data/zenodo/`. The expected on-disk layout is:
+
+   ```
+   data/zenodo/
+   ├── 20260116_094944_372/processed/   # 96-well plates
+   ├── 20260122_111821_521/processed/   # Test tubes
+   ├── 20260122_113404_129/processed/   # 24-well plates
+   └── 20260123_113447_096/processed/   # Supplements
+   ```
+
 2. Run `make compile-microscopy-data` (this looks for Zenodo data in `data/zenodo/` by default).
 
 ### Compute Specifications
 
-All scripts, except for [`segment_cells.py`](scripts/segment_cells.py), were executed on a MacBook Pro with an M3 chip, running macOS Tahoe 26.3.1, and equipped with 36 GB of RAM.
+All scripts, except for [`segment_cells.py`](scripts/segment_cells.py), were executed on a MacBook Pro with an M3 chip, running macOS Tahoe 26.3.1, and equipped with 36 GB of RAM. The analysis notebooks and compilation scripts depend only on the pure-Python stack and should run on any platform (Linux, Windows, macOS) that supports Python 3.12.
 
 The [`segment_cells.py`](scripts/segment_cells.py) script was executed via [Modal](https://modal.com) using NVIDIA T4 GPUs on a minimal Debian environment. The setup leveraged up to 10 concurrent containers and mounted an S3 bucket to access the high-throughput microscopy data.
 
